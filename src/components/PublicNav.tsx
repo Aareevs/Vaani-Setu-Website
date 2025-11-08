@@ -17,7 +17,6 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
     { id: 'landing', label: 'Home' },
     { id: 'about', label: 'About' },
     { id: 'pricing', label: 'Pricing' },
-    { id: 'login', label: 'Login' },
   ];
 
   return (
@@ -50,6 +49,13 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
                 {item.label}
               </button>
             ))}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="pl-4 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
             {toggleDarkMode && (
               <button
                 onClick={toggleDarkMode}
@@ -67,12 +73,19 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
               onClick={() => onNavigate('signup')}
               className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
             >
-              Get Started
+              Register/Login
             </button>
           </div>
 
           {/* Mobile Menu Button & Dark Mode Toggle */}
           <div className="md:hidden flex items-center gap-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="pl-4 pr-4 py-2 w-40 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
             {toggleDarkMode && (
               <button
                 onClick={toggleDarkMode}
@@ -133,7 +146,7 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
                   }}
                   className="block w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all text-center"
                 >
-                  Get Started
+                  Register/Login
                 </button>
               </div>
             </motion.div>
