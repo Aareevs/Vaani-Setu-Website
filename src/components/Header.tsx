@@ -1,4 +1,4 @@
-import { Home, Video, Users, BookOpen, Settings, User, Menu, X, LogOut } from 'lucide-react';
+import { Home, Video, Users, BookOpen, Settings, User, Menu, X, LogOut, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import logo from 'figma:asset/bd00bd3a9f16cf036d031e12858b5516cf661d7f.png';
@@ -12,14 +12,13 @@ interface HeaderProps {
 
 export default function Header({ currentPage, onNavigate, onLogout, darkMode }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Home', icon: Home },
     { id: 'interpreter', label: 'Interpreter', icon: Video },
     { id: 'community', label: 'Community', icon: Users },
     { id: 'tutorials', label: 'Tutorials', icon: BookOpen },
-    { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (
@@ -72,19 +71,84 @@ export default function Header({ currentPage, onNavigate, onLogout, darkMode }: 
                 </motion.button>
               );
             })}
-            <motion.button
-              onClick={onLogout}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-                darkMode
-                  ? 'text-red-400 hover:bg-red-900/20'
-                  : 'text-red-600 hover:bg-red-50'
-              }`}
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">Logout</span>
-            </motion.button>
+            
+            {/* Profile Dropdown */}
+            <div className="relative">
+              <motion.button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
+                  darkMode
+                    ? 'text-gray-300 hover:bg-gray-700/50'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
+              </motion.button>
+              
+              <AnimatePresence>
+                {profileDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={`absolute right-0 mt-2 w-48 rounded-xl shadow-lg border ${
+                      darkMode
+                        ? 'bg-gray-800 border-gray-700'
+                        : 'bg-white border-gray-200'
+                    } py-2 z-50`}
+                  >
+                    <button
+                      onClick={() => {
+                        onNavigate('profile');
+                        setProfileDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                        darkMode
+                          ? 'text-gray-300 hover:bg-gray-700'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <User className="w-4 h-4" />
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        onNavigate('settings');
+                        setProfileDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                        darkMode
+                          ? 'text-gray-300 hover:bg-gray-700'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </button>
+                    <hr className={`my-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`} />
+                    <button
+                      onClick={() => {
+                        onLogout();
+                        setProfileDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+                        darkMode
+                          ? 'text-red-400 hover:bg-red-900/20'
+                          : 'text-red-600 hover:bg-red-50'
+                      }`}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -140,23 +204,66 @@ export default function Header({ currentPage, onNavigate, onLogout, darkMode }: 
                     </motion.button>
                   );
                 })}
-                <motion.button
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: navItems.length * 0.05 }}
-                  onClick={() => {
-                    onLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    darkMode
-                      ? 'text-red-400 hover:bg-red-900/20'
-                      : 'text-red-600 hover:bg-red-50'
-                  }`}
-                >
-                  <LogOut className="w-5 h-5" />
-                  <span>Logout</span>
-                </motion.button>
+                
+                {/* Account Section */}
+                <div className={`pt-4 mt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <p className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">ACCOUNT</p>
+                  <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: navItems.length * 0.05 }}
+                    onClick={() => {
+                      onNavigate('profile');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                      currentPage === 'profile'
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-500 text-white shadow-lg'
+                        : darkMode
+                        ? 'text-gray-300 hover:bg-gray-700/50'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <User className="w-5 h-5" />
+                    <span>Profile</span>
+                  </motion.button>
+                  <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: (navItems.length + 1) * 0.05 }}
+                    onClick={() => {
+                      onNavigate('settings');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                      currentPage === 'settings'
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-500 text-white shadow-lg'
+                        : darkMode
+                        ? 'text-gray-300 hover:bg-gray-700/50'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span>Settings</span>
+                  </motion.button>
+                  <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: (navItems.length + 2) * 0.05 }}
+                    onClick={() => {
+                      onLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                      darkMode
+                        ? 'text-red-400 hover:bg-red-900/20'
+                        : 'text-red-600 hover:bg-red-50'
+                    }`}
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span>Logout</span>
+                  </motion.button>
+                </div>
               </nav>
             </motion.div>
           )}

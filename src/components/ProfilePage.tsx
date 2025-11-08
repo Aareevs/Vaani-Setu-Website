@@ -129,7 +129,7 @@ export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) 
                       setEditEmail(displayEmail);
                       setIsEditDialogOpen(true);
                     }}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 self-start md:self-auto"
+                    className="px-6 py-3 bg-white text-blue-600 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 self-start md:self-auto shadow-lg border border-white/20"
                   >
                     <Edit className="w-4 h-4" />
                     Edit Profile
