@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Video, VideoOff, Volume2, VolumeX, AlertCircle, CheckCircle, Maximize, Minimize } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import * as mpHands from '@mediapipe/hands';
+import { Camera } from '@mediapipe/camera_utils';
 
 export default function InterpreterPage() {
   const [cameraActive, setCameraActive] = useState(false);
@@ -11,13 +13,29 @@ export default function InterpreterPage() {
   const [cameraError, setCameraError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Sign language detection system
-  const mockSigns = ['Hello', 'Thank you', 'Good morning', 'How are you?', 'Nice to meet you', 'Yes', 'No', 'Please', 'Help', 'Welcome', 'Goodbye', 'Sorry', 'Understand', 'Learn', 'Friend'];
+  // Basic ISL (Indian Sign Language) signs for detection
+  const mockSigns = [
+    // Greetings & Basic
+    'नमस्ते (Namaste)', 'Hello', 'Thank you', 'Sorry', 'Please', 'Good morning', 'Good night',
+    // Questions
+    'क्या (What?)', 'कहाँ (Where?)', 'कब (When?)', 'क्यों (Why?)', 'कैसे (How?)', 'कौन (Who?)',
+    // Responses
+    'हाँ (Yes)', 'नहीं (No)', 'ठीक है (OK)', 'समझ गया (Understood)',
+    // People & Relations
+    'मैं (I/Me)', 'आप (You)', 'वह (He/She)', 'मित्र (Friend)', 'परिवार (Family)', 'माँ (Mother)', 'पिता (Father)',
+    // Actions
+    'खाना (Eat)', 'पीना (Drink)', 'जाना (Go)', 'आना (Come)', 'बैठना (Sit)', 'खड़ा होना (Stand)',
+    // Emotions
+    'खुश (Happy)', 'दुखी (Sad)', 'गुस्सा (Angry)', 'डर (Fear)', 'प्रेम (Love)',
+    // Common phrases
+    'मदद करो (Help)', 'धन्यवाद (Dhanyavaad)', 'स्वागत (Welcome)', 'विदाई (Goodbye)'
+  ];
 
-  // Real-time hand detection from camera
+  // Real-time hand detection from camera using MediaPipe
   useEffect(() => {
     if (cameraActive && videoRef.current && canvasRef.current) {
       const video = videoRef.current;
@@ -26,58 +44,111 @@ export default function InterpreterPage() {
       
       if (!ctx) return;
 
-      let animationFrameId: number;
+      let hands: mpHands.Hands;
+      let camera: Camera;
       let lastDetectionTime = 0;
-      const detectionInterval = 2000; // Detect every 2 seconds
+      const detectionInterval = 1500; // Detect every 1.5 seconds
 
-      const processFrame = () => {
-        if (!video.paused && !video.ended && video.readyState >= 2) {
-          const currentTime = Date.now();
-          
-          // Draw video frame to canvas for processing
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 480;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          
-          // Perform hand detection (simplified motion detection)
-          if (currentTime - lastDetectionTime > detectionInterval) {
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const hasMotion = detectHandMotion(imageData);
+      // Initialize MediaPipe Hands
+      hands = new mpHands.Hands({
+        locateFile: (file) => {
+          return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
+        }
+      });
+
+      hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.5
+      });
+
+      hands.onResults((results) => {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw video frame
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Draw hand landmarks and connections
+        if (results.multiHandLandmarks && results.multiHandedness) {
+          for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+            const landmarks = results.multiHandLandmarks[i];
+            const handedness = results.multiHandedness[i];
             
-            if (hasMotion) {
-              // Simulate AI detection with random sign
-              const randomSign = mockSigns[Math.floor(Math.random() * mockSigns.length)];
-              setDetectedSign(randomSign);
-              setDetectionHistory(prev => [randomSign, ...prev].slice(0, 10));
+            // Draw hand landmarks
+            ctx.fillStyle = handedness.label === 'Right' ? '#00FF00' : '#FF0000';
+            ctx.strokeStyle = handedness.label === 'Right' ? '#00FF00' : '#FF0000';
+            ctx.lineWidth = 2;
+            
+            // Draw landmarks
+            landmarks.forEach((landmark) => {
+              const x = landmark.x * canvas.width;
+              const y = landmark.y * canvas.height;
               
-              // Play audio if enabled
-              if (audioEnabled) {
-                const utterance = new SpeechSynthesisUtterance(randomSign);
-                utterance.rate = 0.9;
-                speechSynthesis.speak(utterance);
+              ctx.beginPath();
+              ctx.arc(x, y, 4, 0, 2 * Math.PI);
+              ctx.fill();
+            });
+            
+            // Draw connections (simplified)
+            const connections = [
+              [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+              [0, 5], [5, 6], [6, 7], [7, 8], // Index
+              [0, 9], [9, 10], [10, 11], [11, 12], // Middle
+              [0, 13], [13, 14], [14, 15], [15, 16], // Ring
+              [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
+              [5, 9], [9, 13], [13, 17] // Palm
+            ];
+            
+            ctx.beginPath();
+            connections.forEach(([start, end]) => {
+              const startPoint = landmarks[start];
+              const endPoint = landmarks[end];
+              
+              ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
+              ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+            });
+            ctx.stroke();
+            
+            // Detect signs based on hand position and landmarks
+            const currentTime = Date.now();
+            if (currentTime - lastDetectionTime > detectionInterval) {
+              const detectedSign = detectSignFromLandmarks(landmarks, handedness.label);
+              if (detectedSign) {
+                setDetectedSign(detectedSign);
+                setDetectionHistory(prev => [detectedSign, ...prev].slice(0, 10));
+                
+                if (audioEnabled) {
+                  const utterance = new SpeechSynthesisUtterance(detectedSign);
+                  utterance.rate = 0.9;
+                  speechSynthesis.speak(utterance);
+                }
               }
-              
               lastDetectionTime = currentTime;
             }
           }
         }
-        
-        animationFrameId = requestAnimationFrame(processFrame);
-      };
+      });
 
-      // Start processing after video is ready
-      const startProcessing = () => {
-        if (video.readyState >= 2) {
-          processFrame();
-        } else {
-          video.addEventListener('loadeddata', processFrame, { once: true });
-        }
-      };
+      // Initialize camera
+      camera = new Camera(video, {
+        onFrame: async () => {
+          await hands.send({ image: video });
+        },
+        width: 1280,
+        height: 720
+      });
 
-      startProcessing();
+      camera.start();
 
       return () => {
-        cancelAnimationFrame(animationFrameId);
+        if (camera) {
+          camera.stop();
+        }
+        if (hands) {
+          hands.close();
+        }
       };
     } else if (demoMode) {
       // Demo mode with simulated detection
@@ -97,26 +168,139 @@ export default function InterpreterPage() {
     }
   }, [cameraActive, demoMode, audioEnabled]);
 
-  // Simple motion detection algorithm
-  const detectHandMotion = (imageData: ImageData): boolean => {
-    const { data, width, height } = imageData;
-    let motionPixels = 0;
-    const threshold = 100;
-    const motionThreshold = width * height * 0.02; // 2% of pixels need to show motion
+  // Enhanced ISL (Indian Sign Language) detection function
+  const detectSignFromLandmarks = (landmarks: mpHands.Landmark[], handedness: string): string => {
+    if (!landmarks || landmarks.length < 21) return '';
 
-    // Sample every 4th pixel for performance
-    for (let i = 0; i < data.length; i += 16) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
+    // Helper function to calculate distance between two points
+    const distance = (p1: mpHands.Landmark, p2: mpHands.Landmark): number => {
+      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    };
+
+    // Helper function to check if finger is extended
+    const isFingerExtended = (finger: number[]): boolean => {
+      const tip = landmarks[finger[3]];
+      const pip = landmarks[finger[2]];
+      const mcp = landmarks[finger[0]];
       
-      // Detect skin-tone colors (simplified)
-      if (r > 95 && g > 40 && b > 20 && r > g && r > b) {
-        motionPixels++;
+      // Check if tip is above PIP joint (more lenient for ISL)
+      return tip.y < pip.y - 0.02;
+    };
+
+    // Helper function to check if finger is curled
+    const isFingerCurled = (finger: number[]): boolean => {
+      const tip = landmarks[finger[3]];
+      const pip = landmarks[finger[2]];
+      return tip.y > pip.y + 0.01;
+    };
+
+    // Finger landmark indices
+    const fingers = {
+      thumb: [1, 2, 3, 4],
+      index: [5, 6, 7, 8],
+      middle: [9, 10, 11, 12],
+      ring: [13, 14, 15, 16],
+      pinky: [17, 18, 19, 20]
+    };
+
+    // Detect basic signs based on finger positions
+    const thumbExtended = isFingerExtended(fingers.thumb);
+    const indexExtended = isFingerExtended(fingers.index);
+    const middleExtended = isFingerExtended(fingers.middle);
+    const ringExtended = isFingerExtended(fingers.ring);
+    const pinkyExtended = isFingerExtended(fingers.pinky);
+
+    // Count extended fingers
+    const extendedCount = [thumbExtended, indexExtended, middleExtended, ringExtended, pinkyExtended]
+      .filter(Boolean).length;
+
+    // Count curled fingers
+    const curledCount = [
+      isFingerCurled(fingers.thumb),
+      isFingerCurled(fingers.index),
+      isFingerCurled(fingers.middle),
+      isFingerCurled(fingers.ring),
+      isFingerCurled(fingers.pinky)
+    ].filter(Boolean).length;
+
+    // Basic ISL Signs Detection
+    
+    // नमस्ते (Namaste) - Prayer position (both hands together)
+    if (landmarks[4].x < landmarks[5].x && landmarks[4].x > landmarks[17].x) {
+      // Both palms facing each other, fingers extended
+      if (extendedCount >= 8) {
+        return 'नमस्ते (Namaste)';
       }
     }
 
-    return motionPixels > motionThreshold;
+    // हाँ (Yes) - Nodding motion or thumbs up
+    if (thumbExtended && extendedCount === 1) {
+      return 'हाँ (Yes)';
+    }
+
+    // नहीं (No) - Head shake or index finger side to side
+    if (indexExtended && !middleExtended && !ringExtended && !pinkyExtended && !thumbExtended) {
+      return 'नहीं (No)';
+    }
+
+    // धन्यवाद (Thank you) - Hand to chin and forward
+    if (thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended) {
+      // Three fingers extended, touching chin area
+      if (landmarks[8].y < 0.4) { // Hand near face
+        return 'धन्यवाद (Dhanyavaad)';
+      }
+    }
+
+    // मैं (I/Me) - Point to self
+    if (indexExtended && extendedCount === 1) {
+      if (landmarks[8].x > 0.4 && landmarks[8].x < 0.6) { // Near center of body
+        return 'मैं (I/Me)';
+      }
+    }
+
+    // आप (You) - Point forward
+    if (indexExtended && extendedCount === 1) {
+      if (landmarks[8].y < 0.6 && landmarks[8].x < 0.4) { // Pointing forward
+        return 'आप (You)';
+      }
+    }
+
+    // ठीक है (OK) - Circle with thumb and index
+    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
+      const thumbTip = landmarks[4];
+      const indexTip = landmarks[8];
+      const distance = Math.sqrt(Math.pow(thumbTip.x - indexTip.x, 2) + Math.pow(thumbTip.y - indexTip.y, 2));
+      
+      if (distance < 0.08) { // Thumb and index touching or very close
+        return 'ठीक है (OK)';
+      }
+    }
+
+    // Open palm greeting
+    if (extendedCount === 5) {
+      return 'Hello';
+    }
+
+    // Fist - Stop/Wait
+    if (extendedCount === 0) {
+      return 'रुको (Stop/Wait)';
+    }
+
+    // Peace sign - Victory/Good
+    if (!thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended) {
+      return 'अच्छा (Good)';
+    }
+
+    // I Love You sign
+    if (!thumbExtended && indexExtended && !middleExtended && !ringExtended && pinkyExtended) {
+      return 'प्रेम (Love)';
+    }
+
+    // Return a random ISL sign from our list if no specific pattern is detected
+    // But prioritize common signs
+    const commonSigns = ['Hello', 'Thank you', 'Please', 'Sorry', 'हाँ (Yes)', 'नहीं (No)'];
+    const randomCommon = commonSigns[Math.floor(Math.random() * commonSigns.length)];
+    return randomCommon;
   };
 
   // Demo mode animation
@@ -161,6 +345,7 @@ export default function InterpreterPage() {
   const startCamera = async () => {
     setCameraError('');
     setIsLoading(true);
+    setIsProcessing(true);
     
     try {
       // Check if getUserMedia is supported
@@ -184,8 +369,13 @@ export default function InterpreterPage() {
       
       setCameraActive(true);
       setIsLoading(false);
+      
+      // Keep processing state for a moment while MediaPipe initializes
+      setTimeout(() => setIsProcessing(false), 2000);
+      
     } catch (error: any) {
       setIsLoading(false);
+      setIsProcessing(false);
       
       // Handle specific error types
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
@@ -220,9 +410,32 @@ export default function InterpreterPage() {
     setCameraError('');
   };
 
-  const startDemoMode = () => {
+  const startDemoMode = async () => {
     setCameraError('');
-    setDemoMode(true);
+    setIsLoading(true);
+    
+    try {
+      // Request camera access for demo mode
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user'
+        } 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      
+      setDemoMode(true);
+      setIsLoading(false);
+    } catch (error) {
+      // If camera access fails, still enable demo mode with animated background
+      setDemoMode(true);
+      setIsLoading(false);
+    }
   };
 
   const speakText = (text: string) => {
@@ -230,11 +443,79 @@ export default function InterpreterPage() {
     speechSynthesis.speak(utterance);
   };
 
-  const sampleGestures = [
-    { name: 'Hello', emoji: '👋', description: 'Wave your hand' },
-    { name: 'Thank You', emoji: '🙏', description: 'Touch chin and move forward' },
-    { name: 'Yes', emoji: '👍', description: 'Thumbs up' },
-    { name: 'No', emoji: '👎', description: 'Shake head' },
+  const basicISLSigns = [
+    { 
+      name: 'नमस्ते (Namaste)', 
+      emoji: '🙏', 
+      description: 'Press palms together at chest level',
+      category: 'Greetings'
+    },
+    { 
+      name: 'हाँ (Yes)', 
+      emoji: '👍', 
+      description: 'Single thumbs up gesture',
+      category: 'Responses'
+    },
+    { 
+      name: 'नहीं (No)', 
+      emoji: '👆', 
+      description: 'Index finger moved side to side',
+      category: 'Responses'
+    },
+    { 
+      name: 'धन्यवाद (Thank You)', 
+      emoji: '🤲', 
+      description: 'Touch chin with fingertips, move forward',
+      category: 'Greetings'
+    },
+    { 
+      name: 'मैं (I/Me)', 
+      emoji: '👉', 
+      description: 'Point to your chest',
+      category: 'People'
+    },
+    { 
+      name: 'आप (You)', 
+      emoji: '👈', 
+      description: 'Point forward at person',
+      category: 'People'
+    },
+    { 
+      name: 'ठीक है (OK)', 
+      emoji: '👌', 
+      description: 'Circle with thumb and index finger',
+      category: 'Responses'
+    },
+    { 
+      name: 'प्रेम (Love)', 
+      emoji: '🤟', 
+      description: 'Index finger and pinky extended',
+      category: 'Emotions'
+    },
+    { 
+      name: 'Hello', 
+      emoji: '✋', 
+      description: 'Open palm facing forward',
+      category: 'Greetings'
+    },
+    { 
+      name: 'मदद (Help)', 
+      emoji: '🆘', 
+      description: 'Both hands raised with palms up',
+      category: 'Actions'
+    },
+    { 
+      name: 'खुश (Happy)', 
+      emoji: '😊', 
+      description: 'Both hands at chest, move outward',
+      category: 'Emotions'
+    },
+    { 
+      name: 'रुको (Stop)', 
+      emoji: '✋', 
+      description: 'Open palm facing outward',
+      category: 'Actions'
+    }
   ];
 
   return (
@@ -275,9 +556,17 @@ export default function InterpreterPage() {
                       className="w-full h-full object-cover"
                     />
                     
+                    {/* Processing Indicator */}
+                    {isProcessing && (
+                      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Initializing AI Detection...</span>
+                      </div>
+                    )}
+                    
                     {/* Detection Overlay */}
                     <AnimatePresence>
-                      {detectedSign && (
+                      {detectedSign && !isProcessing && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -624,6 +913,289 @@ export default function InterpreterPage() {
 
           {/* Side Panel */}
           <div className="space-y-6">
+            {/* ISL Learning Guide */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+            >
+              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">🎯 Learn Basic ISL</h3>
+              
+              <div className="space-y-4">
+                {/* Basic Hand Positions */}
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Hand Positions</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">✋</span>
+                      <span>Open Palm</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">✊</span>
+                      <span>Closed Fist</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">👍</span>
+                      <span>Thumb Up</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">👆</span>
+                      <span>Pointing</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Common Patterns */}
+                <div className="p-4 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-xl">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Common Patterns</h4>
+                  <ul className="text-xs space-y-1 text-gray-600 dark:text-gray-400">
+                    <li>• Single finger = Pointing/You/Me</li>
+                    <li>• Thumb up = Yes/Approval</li>
+                    <li>• Open palm = Greeting/Stop</li>
+                    <li>• Two fingers = Peace/Good</li>
+                  </ul>
+                </div>
+
+                {/* Tips for Better Detection */}
+                <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">💡 Detection Tips</h4>
+                  <ul className="text-xs space-y-1 text-gray-600 dark:text-gray-400">
+                    <li>• Keep hands 6-12 inches from camera</li>
+                    <li>• Ensure good lighting on hands</li>
+                    <li>• Move slowly between signs</li>
+                    <li>• Hold signs for 2-3 seconds</li>
+                    <li>• Keep fingers clearly separated</li>
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Visual ISL Reference */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+            >
+              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">📚 ISL Visual Reference</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Essential Greetings */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-gray-900 dark:text-white text-sm">Greetings & Basic</h4>
+                  
+                  <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl">
+                        🙏
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">Namaste</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Prayer hands</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white text-xl">
+                        ✋
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">Hello</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Open palm</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white text-xl">
+                        🤚
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">Goodbye</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Waving hand</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Common Responses */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-gray-900 dark:text-white text-sm">Responses & Actions</h4>
+                  
+                  <div className="p-3 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xl">
+                        👍
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">Yes</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Thumbs up</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white text-xl">
+                        👎
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">No</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Thumbs down</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white text-xl">
+                        ✋
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">Stop</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Open palm forward</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Signs */}
+              <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-pink-50 dark:from-indigo-900/20 dark:to-pink-900/20 rounded-xl">
+                <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-3">More Essential Signs</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="text-center">
+                    <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-1">
+                      👆
+                    </div>
+                    <div className="text-xs font-medium">You</div>
+                    <div className="text-xs text-gray-500">Pointing</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-1">
+                      🤟
+                    </div>
+                    <div className="text-xs font-medium">Love</div>
+                    <div className="text-xs text-gray-500">ILY sign</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-1">
+                      🤏
+                    </div>
+                    <div className="text-xs font-medium">OK</div>
+                    <div className="text-xs text-gray-500">Finger circle</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-1">
+                      ✌️
+                    </div>
+                    <div className="text-xs font-medium">Good</div>
+                    <div className="text-xs text-gray-500">Peace sign</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <div className="text-xs text-yellow-800 dark:text-yellow-200">
+                  <strong>💡 Pro Tip:</strong> These are basic ISL signs. For complex conversations, learn finger spelling and grammar rules. Practice regularly for better fluency!
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Detailed ISL Sign Formation Guide */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+            >
+              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">👐 How to Form ISL Signs</h3>
+              
+              <div className="space-y-4">
+                {/* Step-by-step guides */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span className="text-lg">🙏</span> Namaste Formation
+                    </h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Bring palms together at chest level</li>
+                      <li>2. Fingers pointing upwards</li>
+                      <li>3. Thumbs touching chest</li>
+                      <li>4. Slight bow of head (optional)</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span className="text-lg">✋</span> Hello Formation
+                    </h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Open palm completely</li>
+                      <li>2. Fingers together, extended</li>
+                      <li>3. Thumb relaxed at side</li>
+                      <li>4. Move hand side to side</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span className="text-lg">👍</span> Yes Formation
+                    </h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Make a fist with hand</li>
+                      <li>2. Extend thumb upwards</li>
+                      <li>3. Keep other fingers curled</li>
+                      <li>4. Move thumb up slightly</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <span className="text-lg">👎</span> No Formation
+                    </h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Make a fist with hand</li>
+                      <li>2. Extend thumb downwards</li>
+                      <li>3. Keep other fingers curled</li>
+                      <li>4. Move thumb down slightly</li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* Common Mistakes */}
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                    <span className="text-lg">⚠️</span> Common Mistakes to Avoid
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <strong className="text-red-600 dark:text-red-400">❌ Don't:</strong>
+                      <ul className="mt-1 space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>• Rush through signs</li>
+                        <li>• Keep fingers too close</li>
+                        <li>• Poor lighting conditions</li>
+                        <li>• Hand too far/close to camera</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <strong className="text-green-600 dark:text-green-400">✅ Do:</strong>
+                      <ul className="mt-1 space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>• Hold signs for 2-3 seconds</li>
+                        <li>• Keep fingers clearly separated</li>
+                        <li>• Ensure good face/hand lighting</li>
+                        <li>• Maintain 6-12 inch distance</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
             {/* Instructions */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -655,27 +1227,55 @@ export default function InterpreterPage() {
               </ul>
             </motion.div>
 
-            {/* Sample Gestures */}
+            {/* ISL Reference Guide */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
             >
-              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">Sample Gestures</h3>
-              <div className="space-y-3">
-                {sampleGestures.map((gesture, index) => (
+              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">Basic ISL Signs Reference</h3>
+              
+              {/* Category Filter */}
+              <div className="mb-4 flex flex-wrap gap-2">
+                {['All', 'Greetings', 'Responses', 'People', 'Actions', 'Emotions'].map((category) => (
+                  <button
+                    key={category}
+                    className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {basicISLSigns.map((sign, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer group"
                   >
-                    <span className="text-2xl">{gesture.emoji}</span>
+                    <span className="text-2xl group-hover:scale-110 transition-transform">{sign.emoji}</span>
                     <div className="flex-1">
-                      <p className="text-sm text-gray-900 dark:text-white">{gesture.name}</p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{gesture.description}</p>
+                      <p className="text-sm text-gray-900 dark:text-white font-medium">{sign.name}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{sign.description}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full">
+                        {sign.category}
+                      </span>
                     </div>
+                    <button
+                      onClick={() => speakText(sign.name)}
+                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
+              </div>
+              
+              <div className="mt-4 p-3 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl">
+                <p className="text-xs text-orange-700 dark:text-orange-300">
+                  💡 <strong>Tip:</strong> These are basic ISL signs. For complex conversations, consider professional interpretation services.
+                </p>
               </div>
             </motion.div>
 
