@@ -11,7 +11,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 export const getGeminiResponse = async (prompt: string) => {
   try {
     // Using a stable, widely available model to ensure compatibility.
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();

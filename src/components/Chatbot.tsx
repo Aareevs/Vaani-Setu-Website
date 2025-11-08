@@ -4,6 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { containsProfanity, getProfanityWarningMessage } from '../utils/profanityFilter';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getGeminiResponse } from '../utils/gemini';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
+
+
 
 interface Message {
   id: number;
