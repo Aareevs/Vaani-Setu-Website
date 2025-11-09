@@ -1,4 +1,4 @@
-import { Home, Video, Users, BookOpen, Settings, User, Menu, X, LogOut, ChevronDown } from 'lucide-react';
+import { Home, Video, Users, BookOpen, Settings, User, Menu, X, LogOut, ChevronDown, CreditCard } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useKeyboardNavigation, useFocusManagement, useAnnouncer } from '../hooks/useAccessibility';
@@ -39,10 +39,11 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout }: 
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home },
+    { id: 'dashboard', label: 'Home', icon: Home },
     { id: 'interpreter', label: 'Interpreter', icon: Video },
     { id: 'community', label: 'Community', icon: Users },
     { id: 'tutorials', label: 'Tutorials', icon: BookOpen },
+    { id: 'pricing', label: 'Pricing', icon: CreditCard },
   ];
 
   // Handle keyboard navigation for navigation items
@@ -92,7 +93,8 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout }: 
   }, [currentPage]);
 
   return (
-    <header 
+    <>
+      <header 
       ref={headerRef}
       className={`sticky top-0 z-50 backdrop-blur-lg ${darkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'} border-b shadow-lg`}
       role="banner"
@@ -103,13 +105,13 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout }: 
           {/* Logo */}
           <motion.div 
             className="flex items-center gap-3 cursor-pointer"
-            onClick={() => onNavigate('home')}
+            onClick={() => onNavigate('dashboard')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             role="button"
             tabIndex={0}
             aria-label="Go to home page"
-            onKeyDown={(e) => handleNavKeyDown(e, () => onNavigate('home'))}
+            onKeyDown={(e) => handleNavKeyDown(e, () => onNavigate('dashboard'))}
           >
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center p-2 shadow-lg">
               <img src={logo} alt="Vaani Setu logo" className="w-full h-full object-contain" />
@@ -122,13 +124,13 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout }: 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-2" role="navigation" aria-label="Main menu">
             {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentPage === item.id;
-              return (
-                <motion.button
-                  key={item.id}
-                  onClick={() => onNavigate(item.id)}
-                  onKeyDown={(e) => handleNavKeyDown(e, () => onNavigate(item.id))}
+                const Icon = item.icon;
+                const isActive = currentPage === item.id;
+                return (
+                  <motion.button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id)}
+                    onKeyDown={(e) => handleNavKeyDown(e, () => onNavigate(item.id))}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={`relative flex items-center gap-2 px-4 py-2 rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -447,5 +449,6 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout }: 
         </AnimatePresence>
       </div>
     </header>
+    </>
   );
 }

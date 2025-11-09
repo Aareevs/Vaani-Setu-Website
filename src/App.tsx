@@ -59,7 +59,7 @@ function App() {
       case 'about':
         return <AboutPage onNavigate={navigateTo} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
       case 'pricing':
-        return <PricingPage onNavigate={navigateTo} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
+        return <PricingPage onNavigate={navigateTo} darkMode={darkMode} toggleDarkMode={toggleDarkMode} isLoggedIn={isLoggedIn} />;
       case 'login':
         return <LoginPage onLogin={handleLogin} onNavigate={navigateTo} isSignup={false} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
       case 'signup':
@@ -118,7 +118,7 @@ function App() {
       <main className={isLoggedIn ? '' : ''}>
         {renderPage()}
       </main>
-      {currentPage !== 'landing' && currentPage !== 'about' && currentPage !== 'pricing' && currentPage !== 'login' && currentPage !== 'signup' && <Footer darkMode={darkMode} onNavigate={navigateTo} />}
+      {currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== '404' && <Footer darkMode={darkMode} onNavigate={navigateTo} />}
       
       {/* Chatbot - Available on all pages */}
       <Chatbot darkMode={darkMode} />

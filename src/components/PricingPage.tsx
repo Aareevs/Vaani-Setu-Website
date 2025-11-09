@@ -1,15 +1,25 @@
 import { Check, Star, Users, Building2, Sparkles, Zap, Shield, Heart } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useState } from 'react';
 import PublicNav from './PublicNav';
 import Footer from './Footer';
+import PaymentModal from './ui/PaymentModal';
 
 interface PricingPageProps {
   onNavigate: (page: any) => void;
   darkMode?: boolean;
   toggleDarkMode?: () => void;
+  isLoggedIn?: boolean;
 }
 
-export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMode }: PricingPageProps) {
+export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMode, isLoggedIn = false }: PricingPageProps) {
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{name: string, price: string} | null>(null);
+
+  const handlePurchaseClick = (planName: string, planPrice: string) => {
+    setSelectedPlan({ name: planName, price: planPrice });
+    setShowPaymentModal(true);
+  };
   const plans = [
     {
       name: 'Freemium',
@@ -121,8 +131,10 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Navigation */}
-      <PublicNav onNavigate={onNavigate} currentPage="pricing" darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      {/* Navigation - Only show PublicNav when not logged in */}
+      {!isLoggedIn && (
+        <PublicNav onNavigate={onNavigate} currentPage="pricing" darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      )}
       
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-blue-500 to-purple-500 text-white py-20 px-4 pt-24">
@@ -196,14 +208,22 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
                 </div>
 
                 <button
-                  onClick={() => plan.enterprise ? onNavigate('contact') : onNavigate('signup')}
+                  onClick={() => {
+                    if (plan.enterprise) {
+                      onNavigate('contact');
+                    } else if (isLoggedIn) {
+                      handlePurchaseClick(plan.name, plan.price);
+                    } else {
+                      onNavigate('signup');
+                    }
+                  }}
                   className={`w-full py-3 px-6 rounded-xl transition-all mb-6 ${
                     plan.popular
                       ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:scale-105'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {plan.cta}
+                  {isLoggedIn && !plan.enterprise ? 'Purchase This Plan' : plan.cta}
                 </button>
 
                 <div className="space-y-3">
@@ -315,10 +335,10 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <button
-                onClick={() => onNavigate('signup')}
+                onClick={() => isLoggedIn ? onNavigate('dashboard') : onNavigate('signup')}
                 className="px-8 py-4 bg-white text-blue-600 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
               >
-                Start Free Today
+                {isLoggedIn ? 'Go to Dashboard' : 'Start Free Today'}
               </button>
               <button
                 onClick={() => onNavigate('about')}
@@ -333,6 +353,17 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
       
       {/* Footer */}
       <Footer darkMode={darkMode} onNavigate={onNavigate} />
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedPlan && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          planName={selectedPlan.name}
+          planPrice={selectedPlan.price}
+          darkMode={darkMode}
+        />
+      )}
     </div>
   );
 }
