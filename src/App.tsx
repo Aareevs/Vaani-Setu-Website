@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Home, Video, Users, BookOpen, Settings, User, Menu, X } from 'lucide-react';
 import LandingPage from './components/LandingPage';
 import AboutPage from './components/AboutPage';
 import PricingPage from './components/PricingPage';
@@ -14,6 +13,11 @@ import NotFoundPage from './components/NotFoundPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Chatbot from './components/Chatbot';
+import { ToastContainer } from './components/ui/Toast';
+import { useToast } from './hooks/useToast';
+import { EnhancedBreadcrumb } from './components/ui/breadcrumb';
+import { OfflineIndicator } from './components/ui/OfflineIndicator';
+import { BackToTop } from './components/ui/BackToTop';
 
 type Page = 'landing' | 'about' | 'pricing' | 'login' | 'signup' | 'dashboard' | 'interpreter' | 'community' | 'tutorials' | 'settings' | 'profile' | '404';
 
@@ -22,17 +26,20 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
   const [darkMode, setDarkMode] = useState(false);
+  const { toasts, toast, removeToast } = useToast();
 
   const handleLogin = (name: string) => {
     setIsLoggedIn(true);
     setUserName(name);
     setCurrentPage('dashboard');
+    toast.success('Login Successful!', `Welcome back, ${name}!`);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserName('');
     setCurrentPage('landing');
+    toast.info('Logged Out', 'You have been successfully logged out.');
   };
 
   const navigateTo = (page: Page) => {
@@ -77,8 +84,37 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      {isLoggedIn && <Header currentPage={currentPage} onNavigate={navigateTo} onLogout={handleLogout} darkMode={darkMode} />}
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      <OfflineIndicator />
+      
+      {/* Header */}
+      {currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== '404' && (
+        <Header 
+          currentPage={currentPage} 
+          onNavigate={navigateTo} 
+          darkMode={darkMode} 
+          user={userName}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {/* Breadcrumb Navigation */}
+      {currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== '404' && (
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <EnhancedBreadcrumb 
+              items={[
+                { label: 'Home', onClick: () => navigateTo('dashboard') },
+                { label: currentPage.charAt(0).toUpperCase() + currentPage.slice(1), onClick: () => {} }
+              ]}
+              darkMode={darkMode}
+              separator="chevron"
+            />
+          </div>
+        </div>
+      )}
+      
       <main className={isLoggedIn ? '' : ''}>
         {renderPage()}
       </main>
@@ -86,6 +122,9 @@ function App() {
       
       {/* Chatbot - Available on all pages */}
       <Chatbot darkMode={darkMode} />
+      
+      {/* Back to Top Button */}
+      <BackToTop darkMode={darkMode} />
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Play, CheckCircle, Lock, BookOpen, Clock, Award, ArrowLeft, ChevronRight, Video } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { SearchBar, SearchResultsCounter } from './ui/SearchBar';
+import { useSearch } from '../hooks/useSearch';
 
 interface Lesson {
   id: number;
@@ -503,9 +505,257 @@ export default function TutorialsPage() {
     },
   ];
 
-  const filteredTutorials = selectedCategory === 'all'
-    ? tutorials
-    : tutorials.filter(t => t.category === selectedCategory);
+  // Search functionality
+  const { search, results, totalResults, filteredResults, query } = useSearch({
+    items: tutorials,
+    searchFields: ['title', 'description', 'overview', 'whatYouLearn'],
+    filterableFields: ['category', 'duration'],
+    initialFilters: { sortBy: 'relevance' }
+  });
+
+  // Filter tutorials by category if not showing all
+  const filteredTutorials = selectedCategory === 'all' 
+    ? results 
+    : results.filter(tutorial => tutorial.category === selectedCategory);
+
+  if (selectedTutorial) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-6xl mx-auto">
+          {/* Back button */}
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={() => {
+              setSelectedTutorial(null);
+              setSelectedLesson(null);
+            }}
+            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mb-6 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Tutorials
+          </motion.button>
+
+          {/* Tutorial Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8"
+          >
+            <div className="flex flex-col lg:flex-row gap-8">
+              <div className="flex-1">
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                  {selectedTutorial.title}
+                </h1>
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                  {selectedTutorial.description}
+                </p>
+                
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-gray-700 dark:text-gray-300">{selectedTutorial.duration}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-gray-700 dark:text-gray-300">{selectedTutorial.lessons} lessons</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-gray-700 dark:text-gray-300">{selectedTutorial.progress}% complete</span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-6">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${selectedTutorial.progress}%` }}
+                  />
+                </div>
+              </div>
+              
+              <div className="lg:w-80">
+                <ImageWithFallback
+                  src={selectedTutorial.thumbnail}
+                  alt={selectedTutorial.title}
+                  className="w-full h-48 object-cover rounded-xl shadow-lg"
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Lesson Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Lessons List */}
+            <div className="lg:col-span-1">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sticky top-4"
+              >
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  Lessons
+                </h3>
+                <div className="space-y-2">
+                  {selectedTutorial.detailedLessons.map((lesson, index) => (
+                    <motion.button
+                      key={lesson.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      onClick={() => setSelectedLesson(lesson)}
+                      className={`w-full text-left p-4 rounded-xl transition-all duration-200 ${
+                        selectedLesson?.id === lesson.id
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500'
+                          : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {lesson.title}
+                        </span>
+                        {completedLessons.includes(lesson.id) ? (
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                        ) : lesson.locked ? (
+                          <Lock className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Clock className="w-4 h-4" />
+                        <span>{lesson.duration}</span>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Lesson Content */}
+            <div className="lg:col-span-2">
+              {selectedLesson ? (
+                <motion.div
+                  key={selectedLesson.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8"
+                >
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      {selectedLesson.title}
+                    </h2>
+                    <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {selectedLesson.duration}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Video className="w-4 h-4" />
+                        Video Lesson
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mb-8">
+                    <div className="bg-gray-100 dark:bg-gray-700 rounded-xl p-8 mb-6">
+                      <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                          <Play className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+                          <p className="text-gray-600 dark:text-gray-400">
+                            Video demonstration will play here
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      Key Points
+                    </h3>
+                    <ul className="space-y-2">
+                      {selectedLesson.keyPoints.map((point, index) => (
+                        <motion.li
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-start gap-3"
+                        >
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700 dark:text-gray-300">{point}</span>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      Practice Steps
+                    </h3>
+                    <ol className="space-y-3">
+                      {selectedLesson.steps.map((step, index) => (
+                        <motion.li
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-start gap-3"
+                        >
+                          <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                            {index + 1}
+                          </span>
+                          <span className="text-gray-700 dark:text-gray-300">{step}</span>
+                        </motion.li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        if (!completedLessons.includes(selectedLesson.id)) {
+                          setCompletedLessons([...completedLessons, selectedLesson.id]);
+                        }
+                      }}
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg"
+                    >
+                      Mark as Complete
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                    >
+                      Practice Again
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center"
+                >
+                  <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Select a Lesson
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Choose a lesson from the sidebar to begin learning
+                  </p>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const stats = {
     totalCompleted: completedLessons.length,
@@ -546,7 +796,7 @@ export default function TutorialsPage() {
             className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:gap-3 transition-all mb-6"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to {selectedTutorial.title}
+            Back to {selectedTutorial ? (selectedTutorial as Tutorial).title : 'Tutorials'}
           </motion.button>
 
           <motion.div
@@ -667,35 +917,35 @@ export default function TutorialsPage() {
               >
                 <div className="relative h-48 rounded-2xl overflow-hidden mb-6">
                   <ImageWithFallback
-                    src={selectedTutorial.thumbnail}
-                    alt={selectedTutorial.title}
+                    src={(selectedTutorial as Tutorial).thumbnail}
+                    alt={(selectedTutorial as Tutorial)?.title ?? 'Tutorial thumbnail'}
                     className="w-full h-full object-cover"
                   />
                 </div>
 
-                <h2 className="text-2xl mb-4 text-gray-900 dark:text-white">{selectedTutorial.title}</h2>
+                <h2 className="text-2xl mb-4 text-gray-900 dark:text-white">{(selectedTutorial as Tutorial).title}</h2>
                 
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
                     <Clock className="w-5 h-5" />
-                    <span>{selectedTutorial.duration} total</span>
+                    <span>{(selectedTutorial as Tutorial).duration} total</span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
                     <BookOpen className="w-5 h-5" />
-                    <span>{selectedTutorial.lessons} lessons</span>
+                    <span>{(selectedTutorial as Tutorial).lessons} lessons</span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
                     <Award className="w-5 h-5" />
-                    <span>{selectedTutorial.progress}% complete</span>
+                    <span>{(selectedTutorial as Tutorial).progress}% complete</span>
                   </div>
                 </div>
 
-                {selectedTutorial.progress > 0 && (
+                {(selectedTutorial as Tutorial).progress > 0 && (
                   <div className="mb-6">
                     <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-blue-600 to-purple-500 transition-all"
-                        style={{ width: `${selectedTutorial.progress}%` }}
+                        style={{ width: `${(selectedTutorial as Tutorial).progress}%` }}
                       />
                     </div>
                   </div>
@@ -704,7 +954,7 @@ export default function TutorialsPage() {
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                   <h4 className="text-sm mb-3 text-gray-600 dark:text-gray-400">Prerequisites</h4>
                   <ul className="space-y-2">
-                    {selectedTutorial.prerequisites.map((prereq, index) => (
+                    {(selectedTutorial as Tutorial).prerequisites.map((prereq, index) => (
                       <li key={index} className="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2">
                         <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                         <span>{prereq}</span>
@@ -725,11 +975,11 @@ export default function TutorialsPage() {
                 className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8"
               >
                 <h3 className="text-2xl mb-4 text-gray-900 dark:text-white">Overview</h3>
-                <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6">{selectedTutorial.overview}</p>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6">{(selectedTutorial as Tutorial).overview}</p>
 
                 <h4 className="text-lg mb-3 text-gray-900 dark:text-white">What You'll Learn</h4>
                 <ul className="space-y-3">
-                  {selectedTutorial.whatYouLearn.map((item, index) => (
+                  {(selectedTutorial as Tutorial).whatYouLearn.map((item, index) => (
                     <li key={index} className="flex items-start gap-3">
                       <ChevronRight className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                       <span className="text-gray-600 dark:text-gray-300">{item}</span>
@@ -748,8 +998,8 @@ export default function TutorialsPage() {
                 <h3 className="text-2xl mb-6 text-gray-900 dark:text-white">Course Content</h3>
                 
                 <div className="space-y-3">
-                  {selectedTutorial.detailedLessons && selectedTutorial.detailedLessons.length > 0 ? (
-                    selectedTutorial.detailedLessons.map((lesson, index) => (
+                  {(selectedTutorial as Tutorial).detailedLessons && (selectedTutorial as Tutorial).detailedLessons.length > 0 ? (
+                    (selectedTutorial as Tutorial).detailedLessons.map((lesson, index) => (
                       <motion.button
                         key={lesson.id}
                         initial={{ opacity: 0, x: -20 }}
@@ -823,6 +1073,32 @@ export default function TutorialsPage() {
         >
           <h1 className="text-3xl mb-2 text-gray-900 dark:text-white">Learn Sign Language</h1>
           <p className="text-gray-600 dark:text-gray-400">Master ISL with interactive video tutorials</p>
+        </motion.div>
+
+        {/* Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <SearchBar
+            onSearch={search}
+            placeholder="Search tutorials by title, description, or what you'll learn..."
+            darkMode={false}
+            showFilters={true}
+            categories={['beginner', 'daily', 'emergency', 'numbers']}
+            difficulties={['Beginner', 'Intermediate', 'Advanced']}
+            durations={['Under 5 min', '5-10 min', '10-15 min', 'Over 15 min']}
+            tags={['greetings', 'family', 'numbers', 'emergency', 'basic', 'conversation']}
+          />
+          
+          <SearchResultsCounter
+            total={totalResults}
+            filtered={filteredResults}
+            query={query}
+            darkMode={false}
+          />
         </motion.div>
 
         {/* Stats Cards */}

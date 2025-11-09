@@ -1,31 +1,105 @@
+import { useEffect, useState } from 'react';
 import { Video, MessageSquare, TrendingUp, Clock, ArrowRight, BookOpen, Award, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useLoading } from '../hooks/useLoading';
+import { DashboardSkeleton } from './ui/skeleton';
 
 interface DashboardProps {
   userName: string;
   onNavigate: (page: any) => void;
 }
 
+interface DashboardData {
+  stats: Array<{
+    label: string;
+    value: string;
+    icon: any;
+    color: string;
+    bgColor: string;
+  }>;
+  recentActivities: Array<{
+    action: string;
+    name: string;
+    time: string;
+    icon: string;
+  }>;
+  quickActions: Array<{
+    title: string;
+    icon: any;
+    color: string;
+    action: () => void;
+  }>;
+}
+
 export default function Dashboard({ userName, onNavigate }: DashboardProps) {
-  const stats = [
-    { label: 'Signs Interpreted Today', value: '24', icon: Video, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-900/20' },
-    { label: 'Total Sessions', value: '156', icon: Clock, color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-900/20' },
-    { label: 'Community Posts', value: '8', icon: MessageSquare, color: 'from-pink-500 to-pink-600', bgColor: 'bg-pink-50 dark:bg-pink-900/20' },
-    { label: 'Learning Progress', value: '67%', icon: TrendingUp, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50 dark:bg-green-900/20' },
-  ];
+  const { isLoading, startLoading, stopLoading, wrapLoading } = useLoading();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 
-  const recentActivities = [
-    { action: 'Completed tutorial', name: 'Basic Greetings in ISL', time: '2 hours ago', icon: '✅' },
-    { action: 'Interpreted signs', name: '15 signs detected', time: '5 hours ago', icon: '🎯' },
-    { action: 'Posted in community', name: 'Tips for beginners', time: '1 day ago', icon: '💬' },
-    { action: 'Earned achievement', name: 'Week Streak Badge', time: '2 days ago', icon: '🏆' },
-  ];
+  // Simulate data loading
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      startLoading();
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const mockData: DashboardData = {
+        stats: [
+          { label: 'Signs Interpreted Today', value: '24', icon: Video, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-900/20' },
+          { label: 'Total Sessions', value: '156', icon: Clock, color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-900/20' },
+          { label: 'Community Posts', value: '8', icon: MessageSquare, color: 'from-pink-500 to-pink-600', bgColor: 'bg-pink-50 dark:bg-pink-900/20' },
+          { label: 'Learning Progress', value: '67%', icon: TrendingUp, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50 dark:bg-green-900/20' },
+        ],
+        recentActivities: [
+          { action: 'Completed tutorial', name: 'Basic Greetings in ISL', time: '2 hours ago', icon: '✅' },
+          { action: 'Interpreted signs', name: '15 signs detected', time: '5 hours ago', icon: '🎯' },
+          { action: 'Posted in community', name: 'Tips for beginners', time: '1 day ago', icon: '💬' },
+          { action: 'Earned achievement', name: 'Week Streak Badge', time: '2 days ago', icon: '🏆' },
+        ],
+        quickActions: [
+          { title: 'Continue Learning', icon: BookOpen, color: 'from-blue-500 to-blue-600', action: () => onNavigate('tutorials') },
+          { title: 'Join Community', icon: MessageSquare, color: 'from-purple-500 to-purple-600', action: () => onNavigate('community') },
+          { title: 'View Achievements', icon: Award, color: 'from-pink-500 to-pink-600', action: () => onNavigate('profile') },
+        ],
+      };
+      
+      setDashboardData(mockData);
+      stopLoading();
+    };
 
-  const quickActions = [
-    { title: 'Continue Learning', icon: BookOpen, color: 'from-blue-500 to-blue-600', action: () => onNavigate('tutorials') },
-    { title: 'Join Community', icon: MessageSquare, color: 'from-purple-500 to-purple-600', action: () => onNavigate('community') },
-    { title: 'View Achievements', icon: Award, color: 'from-pink-500 to-pink-600', action: () => onNavigate('profile') },
-  ];
+    loadDashboardData();
+  }, [startLoading, stopLoading, onNavigate]);
+
+  // Show skeleton loader while loading
+  if (isLoading || !dashboardData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-900 dark:to-blue-900/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Welcome Section Skeleton */}
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-64 animate-pulse"></div>
+              <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+            </div>
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-80 animate-pulse"></div>
+          </div>
+
+          {/* Dashboard Skeleton */}
+          <DashboardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  const { stats, recentActivities, quickActions } = dashboardData;
+
+  const handleNavigation = async (page: string) => {
+    try {
+      await wrapLoading(Promise.resolve(onNavigate(page)));
+    } catch (error) {
+      console.error('Navigation failed:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-900 dark:to-blue-900/10">
@@ -89,7 +163,7 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             className="relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-purple-500 rounded-3xl p-8 shadow-2xl text-white group cursor-pointer"
-            onClick={() => onNavigate('interpreter')}
+            onClick={() => handleNavigation('interpreter')}
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-600/30 rounded-full blur-2xl -ml-24 -mb-24" />
@@ -117,7 +191,7 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
             className="relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-pink-500 rounded-3xl p-8 shadow-2xl text-white group cursor-pointer"
-            onClick={() => onNavigate('tutorials')}
+            onClick={() => handleNavigation('tutorials')}
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-600/30 rounded-full blur-2xl -ml-24 -mb-24" />
