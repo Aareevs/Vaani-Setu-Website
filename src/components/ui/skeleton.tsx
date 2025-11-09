@@ -1,8 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { cn } from "./utils";
+import { cn } from "../../utils/cn";
 
-function Skeleton({ className, children, ...rest }: React.ComponentProps<"div">) {
+interface SkeletonProps {
+  className?: string;
+  children?: React.ReactNode;
+}
+
+function Skeleton({ className, children }: SkeletonProps) {
   return (
     <motion.div
       initial={{ opacity: 0.5 }}
@@ -10,7 +15,6 @@ function Skeleton({ className, children, ...rest }: React.ComponentProps<"div">)
       transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
       data-slot="skeleton"
       className={cn("bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md", className)}
-      {...rest}
     >
       {children}
     </motion.div>
