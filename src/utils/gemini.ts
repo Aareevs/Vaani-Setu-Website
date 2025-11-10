@@ -18,7 +18,7 @@ export const getGeminiResponse = async (prompt: string) => {
     console.log("📤 Prompt:", prompt.substring(0, 50) + "...");
     
     // Using a stable, widely available model to ensure compatibility.
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
     console.log("🎯 Model initialized successfully");
     
     const result = await model.generateContent(prompt);

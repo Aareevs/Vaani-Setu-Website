@@ -15,6 +15,7 @@ interface PricingPageProps {
 export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMode, isLoggedIn = false }: PricingPageProps) {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{name: string, price: string} | null>(null);
+  const [activePlan, setActivePlan] = useState<string>('Freemium');
 
   const handlePurchaseClick = (planName: string, planPrice: string) => {
     setSelectedPlan({ name: planName, price: planPrice });
@@ -207,24 +208,33 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
                   <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">{plan.period}</p>
                 </div>
 
-                <button
-                  onClick={() => {
-                    if (plan.enterprise) {
-                      onNavigate('contact');
-                    } else if (isLoggedIn) {
-                      handlePurchaseClick(plan.name, plan.price);
-                    } else {
-                      onNavigate('signup');
-                    }
-                  }}
-                  className={`w-full py-3 px-6 rounded-xl transition-all mb-6 ${
-                    plan.popular
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:scale-105'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {isLoggedIn && !plan.enterprise ? 'Purchase This Plan' : plan.cta}
-                </button>
+                {(isLoggedIn && activePlan === plan.name) ? (
+                  <button
+                    disabled
+                    className="w-full py-3 px-6 rounded-xl mb-6 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                  >
+                    You are using this plan
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (plan.enterprise) {
+                        onNavigate('contact');
+                      } else if (isLoggedIn) {
+                        handlePurchaseClick(plan.name, plan.price);
+                      } else {
+                        onNavigate('signup');
+                      }
+                    }}
+                    className={`w-full py-3 px-6 rounded-xl transition-all mb-6 ${
+                      plan.popular
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:scale-105'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {isLoggedIn && !plan.enterprise ? 'Purchase This Plan' : plan.cta}
+                  </button>
+                )}
 
                 <div className="space-y-3">
                   {plan.features.map((feature, idx) => (
@@ -358,7 +368,12 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
       {showPaymentModal && selectedPlan && (
         <PaymentModal
           isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
+          onClose={() => {
+            setShowPaymentModal(false);
+            if (selectedPlan) {
+              setActivePlan(selectedPlan.name);
+            }
+          }}
           planName={selectedPlan.name}
           planPrice={selectedPlan.price}
           darkMode={darkMode}
