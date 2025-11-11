@@ -12,85 +12,179 @@ const TwitterXIcon = ({ className }: { className?: string }) => (
 interface FooterProps {
   darkMode: boolean;
   onNavigate: (page: any) => void;
+  isLoggedIn?: boolean;
 }
 
-export default function Footer({ darkMode, onNavigate }: FooterProps) {
+export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: FooterProps) {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   return (
     <footer className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t mt-12`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Brand Section */}
-          <div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Main Footer Content */}
+        <div className="flex gap-16 mb-12">
+          {/* Brand Section - Left Side (Larger) */}
+          <div className="flex-1 max-w-sm pr-8">
             <div className="flex items-center gap-3 mb-4">
-              <img src={logo} alt="Vaani Setu Logo" className="w-10 h-10 object-contain" />
-              <span className="bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">Vaani Setu</span>
+              <img src={logo} alt="Vaani Setu Logo" className="w-12 h-12 object-contain" />
+              <div>
+                <span className="bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent font-bold text-lg">Vaani Setu</span>
+                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Breaking Barriers with AI</p>
+              </div>
             </div>
-            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Breaking Communication Barriers with AI
+            <p className={`text-sm leading-relaxed mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              AI-powered sign language interpretation, creating seamless communication between hearing and deaf communities.
+            </p>
+            <p className={`text-sm italic ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+              "Breaking Communication Barriers with AI"
             </p>
           </div>
 
-          {/* Links Section */}
-          <div>
-            <h3 className={`mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Quick Links</h3>
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() => onNavigate('about')}
-                className={`text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
-              >
-                About
-              </button>
-              <span className={darkMode ? 'text-gray-600' : 'text-gray-300'}>|</span>
-              <button 
-                onClick={() => setShowPrivacyModal(true)}
-                className={`text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
-              >
-                Privacy
-              </button>
-              <span className={darkMode ? 'text-gray-600' : 'text-gray-300'}>|</span>
-              <button 
-                onClick={() => setShowSupportModal(true)}
-                className={`text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
-              >
-                Contact
-              </button>
-              <span className={darkMode ? 'text-gray-600' : 'text-gray-300'}>|</span>
-              <button 
-                onClick={() => setShowSupportModal(true)}
-                className={`text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
-              >
-                Support
-              </button>
+          {/* Right Side - All Link Columns */}
+          <div className="flex-1 grid grid-cols-3 gap-8">
+            {/* Quick Links Column */}
+            <div>
+              <h3 className={`mb-6 font-bold text-lg ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Quick Links</h3>
+              <div className="space-y-3">
+                <button
+                  onClick={() => onNavigate('about')}
+                  className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                >
+                  About
+                </button>
+                <button
+                  onClick={() => setShowPrivacyModal(true)}
+                  className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                >
+                  Privacy Policy
+                </button>
+                <button
+                  onClick={() => setShowSupportModal(true)}
+                  className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                >
+                  Support
+                </button>
+                {isLoggedIn && (
+                  <>
+                    <button
+                      onClick={() => onNavigate('interpreter')}
+                      className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                    >
+                      Interpreter
+                    </button>
+                    <button
+                      onClick={() => onNavigate('community')}
+                      className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                    >
+                      Community
+                    </button>
+                    <button
+                      onClick={() => onNavigate('tutorials')}
+                      className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                    >
+                      Tutorials
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Social Media Section */}
-          <div>
-            <h3 className={`mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Connect With Us</h3>
-            <div className="flex gap-3">
-              <a href="#" className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-black' : 'bg-gray-100 hover:bg-black'} transition-colors group`}>
-                <TwitterXIcon className={`w-5 h-5 ${darkMode ? 'text-gray-400 group-hover:text-white' : 'text-gray-600 group-hover:text-white'}`} />
-              </a>
-              <a href="https://www.instagram.com/vaani_setu/" target="_blank" rel="noopener noreferrer" className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-pink-600' : 'bg-gray-100 hover:bg-pink-600'} transition-colors group`}>
-                <Instagram className={`w-5 h-5 ${darkMode ? 'text-gray-400 group-hover:text-white' : 'text-gray-600 group-hover:text-white'}`} />
-              </a>
-              <a href="#" className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-blue-700' : 'bg-gray-100 hover:bg-blue-700'} transition-colors group`}>
-                <Linkedin className={`w-5 h-5 ${darkMode ? 'text-gray-400 group-hover:text-white' : 'text-gray-600 group-hover:text-white'}`} />
-              </a>
-              <a href="mailto:info.vaanisetu@gmail.com" className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-purple-600' : 'bg-gray-100 hover:bg-purple-600'} transition-colors group`}>
-                <Mail className={`w-5 h-5 ${darkMode ? 'text-gray-400 group-hover:text-white' : 'text-gray-600 group-hover:text-white'}`} />
-              </a>
+            {/* Features Column (Logged In Only) */}
+            {isLoggedIn && (
+              <div>
+                <h3 className={`mb-6 font-bold text-lg ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Features</h3>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => onNavigate('pricing')}
+                    className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                  >
+                    Pricing
+                  </button>
+                  <button
+                    onClick={() => onNavigate('settings')}
+                    className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                  >
+                    Settings
+                  </button>
+                  <button
+                    onClick={() => onNavigate('profile')}
+                    className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                  >
+                    Profile
+                  </button>
+                  <button
+                    onClick={() => setShowSupportModal(true)}
+                    className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                  >
+                    Contact Us
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Connect Column */}
+            <div>
+              <h3 className={`mb-6 font-bold text-lg ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Connect</h3>
+              <div className="space-y-3">
+                <a
+                  href="https://www.instagram.com/vaani_setu/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                >
+                  Follow Us
+                </a>
+                <button
+                  onClick={() => setShowSupportModal(true)}
+                  className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                >
+                  Get Help
+                </button>
+                <a
+                  href="mailto:info.vaanisetu@gmail.com"
+                  className={`block text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+                >
+                  Email Us
+                </a>
+              </div>
+              {/* Social Icons */}
+              <div className="flex gap-3 mt-6">
+                <a href="#" className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-black' : 'bg-gray-100 hover:bg-black'} transition-colors group`}>
+                  <TwitterXIcon className={`w-5 h-5 ${darkMode ? 'text-gray-400 group-hover:text-white' : 'text-gray-600 group-hover:text-white'}`} />
+                </a>
+                <a href="https://www.instagram.com/vaani_setu/" target="_blank" rel="noopener noreferrer" className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-pink-600' : 'bg-gray-100 hover:bg-pink-600'} transition-colors group`}>
+                  <Instagram className={`w-5 h-5 ${darkMode ? 'text-gray-400 group-hover:text-white' : 'text-gray-600 group-hover:text-white'}`} />
+                </a>
+                <a href="#" className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-blue-700' : 'bg-gray-100 hover:bg-blue-700'} transition-colors group`}>
+                  <Linkedin className={`w-5 h-5 ${darkMode ? 'text-gray-400 group-hover:text-white' : 'text-gray-600 group-hover:text-white'}`} />
+                </a>
+                <a href="mailto:info.vaanisetu@gmail.com" className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-purple-600' : 'bg-gray-100 hover:bg-purple-600'} transition-colors group`}>
+                  <Mail className={`w-5 h-5 ${darkMode ? 'text-gray-400 group-hover:text-white' : 'text-gray-600 group-hover:text-white'}`} />
+                </a>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className={`mt-8 pt-8 ${darkMode ? 'border-gray-700' : 'border-gray-200'} border-t text-center`}>
+        {/* Bottom Footer */}
+        <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} pt-8 flex justify-between items-center`}>
           <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
             © 2025 Vaani Setu. All rights reserved.
           </p>
+          <div className="flex gap-6">
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              className={`text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+            >
+              Privacy Policy
+            </button>
+            <button
+              onClick={() => setShowSupportModal(true)}
+              className={`text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
+            >
+              Terms of Service
+            </button>
+          </div>
         </div>
       </div>
 

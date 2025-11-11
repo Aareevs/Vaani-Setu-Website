@@ -43,7 +43,7 @@ export const BackToTop: React.FC<BackToTopProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 100 }}
           onClick={scrollToTop}
-          className={`fixed bottom-6 right-6 z-50 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+          className={`fixed bottom-6 right-6 md:right-24 z-[10000] p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
             darkMode
               ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-600'
               : 'bg-white text-gray-900 hover:bg-gray-100 border border-gray-200'

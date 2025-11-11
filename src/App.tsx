@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LandingPage from './components/LandingPage';
 import AboutPage from './components/AboutPage';
 import PricingPage from './components/PricingPage';
@@ -25,7 +25,17 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
-  const [darkMode, setDarkMode] = useState(false);
+  // Initialize dark mode from localStorage or system preference
+  const prefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('vaani:darkMode');
+      if (stored !== null) return stored === 'true';
+    } catch (e) {
+      // ignore
+    }
+    return prefersDark;
+  });
   const { toasts, toast, removeToast } = useToast();
 
   const handleLogin = (name: string) => {
@@ -49,15 +59,32 @@ function App() {
   };
 
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
+    setDarkMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('vaani:darkMode', String(next));
+      } catch (e) {
+        // ignore
+      }
+      // keep document class in sync
+      if (next) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+      return next;
+    });
   };
+
+  // Ensure the `dark` class is present on load and whenever darkMode state changes
+  useEffect(() => {
+    if (darkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+  }, [darkMode]);
 
   const renderPage = () => {
     switch (currentPage) {
       case 'landing':
         return <LandingPage onNavigate={navigateTo} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
       case 'about':
-        return <AboutPage onNavigate={navigateTo} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
+        return <AboutPage onNavigate={navigateTo} darkMode={darkMode} toggleDarkMode={toggleDarkMode} isLoggedIn={isLoggedIn} />;
       case 'pricing':
         return <PricingPage onNavigate={navigateTo} darkMode={darkMode} toggleDarkMode={toggleDarkMode} isLoggedIn={isLoggedIn} />;
       case 'login':
@@ -118,7 +145,7 @@ function App() {
       <main className={isLoggedIn ? '' : ''}>
         {renderPage()}
       </main>
-      {currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== '404' && <Footer darkMode={darkMode} onNavigate={navigateTo} />}
+      {currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== '404' && <Footer darkMode={darkMode} onNavigate={navigateTo} isLoggedIn={isLoggedIn} />}
       
       {/* Chatbot - Available on all pages */}
       <Chatbot darkMode={darkMode} />

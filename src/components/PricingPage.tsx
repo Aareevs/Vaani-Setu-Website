@@ -2,7 +2,6 @@ import { Check, Star, Users, Building2, Sparkles, Zap, Shield, Heart } from 'luc
 import { motion } from 'motion/react';
 import { useState } from 'react';
 import PublicNav from './PublicNav';
-import Footer from './Footer';
 import PaymentModal from './ui/PaymentModal';
 
 interface PricingPageProps {
@@ -16,6 +15,7 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{name: string, price: string} | null>(null);
   const [activePlan, setActivePlan] = useState<string>('Freemium');
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const handlePurchaseClick = (planName: string, planPrice: string) => {
     setSelectedPlan({ name: planName, price: planPrice });
@@ -219,7 +219,7 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
                   <button
                     onClick={() => {
                       if (plan.enterprise) {
-                        onNavigate('contact');
+                          setShowContactModal(true);
                       } else if (isLoggedIn) {
                         handlePurchaseClick(plan.name, plan.price);
                       } else {
@@ -361,8 +361,7 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
         </motion.div>
       </div>
       
-      {/* Footer */}
-      <Footer darkMode={darkMode} onNavigate={onNavigate} />
+  {/* Footer is rendered centrally by App to avoid duplicates */}
 
       {/* Payment Modal */}
       {showPaymentModal && selectedPlan && (
@@ -378,6 +377,37 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
           planPrice={selectedPlan.price}
           darkMode={darkMode}
         />
+      )}
+
+      {/* Contact Modal for Enterprise */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowContactModal(false)}>
+          <div 
+            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl max-w-2xl w-full p-8`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className={`text-2xl mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Enterprise Contact</h2>
+            <p className={`mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Interested in our Enterprise API? Our sales team would love to help!
+            </p>
+            <div className="space-y-4">
+              <div>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Email:</p>
+                <a href="mailto:enterprise@vaanisetu.com" className="text-blue-600 hover:text-blue-700 font-semibold">enterprise@vaanisetu.com</a>
+              </div>
+              <div>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Phone:</p>
+                <a href="tel:+911800123456" className="text-blue-600 hover:text-blue-700 font-semibold">+91 1800-123-456</a>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowContactModal(false)}
+              className="mt-6 w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

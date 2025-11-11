@@ -1,8 +1,7 @@
-import React from 'react';
+// React import not required with modern JSX transform
 import { Heart, Target, Users, Award, Linkedin, Plane } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PublicNav from './PublicNav';
-import Footer from './Footer';
 import shivanshImg from 'figma:asset/a637af40a1a41e19b730027c5387e41be72236e3.png';
 import adityaImg from 'figma:asset/e3d0fbae616eafb81d792fa8e20a687cb8982468.png';
 import aareevImg from 'figma:asset/27666179a65751a5bf9ce3ffaf46c9fa19b1404f.png';
@@ -12,9 +11,10 @@ interface AboutPageProps {
   onNavigate: (page: any) => void;
   darkMode?: boolean;
   toggleDarkMode?: () => void;
+  isLoggedIn?: boolean;
 }
 
-export default function AboutPage({ onNavigate, darkMode = false, toggleDarkMode }: AboutPageProps) {
+export default function AboutPage({ onNavigate, darkMode = false, toggleDarkMode, isLoggedIn = false }: AboutPageProps) {
   const team = [
     { name: 'Shivansh Ojha', role: 'Marketing Lead & Pitcher', avatar: shivanshImg, bio: 'Leading marketing strategy and business pitches', linkedin: 'https://www.linkedin.com/in/shivansh-ojha-87915b235/' },
     { name: 'Aditya Bahuguna', role: 'UI/UX Designer & Front End Developer', avatar: adityaImg, bio: 'Creating inclusive and accessible experiences', linkedin: 'https://www.linkedin.com/in/aditya-bahuguna-/' },
@@ -50,7 +50,10 @@ export default function AboutPage({ onNavigate, darkMode = false, toggleDarkMode
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <PublicNav onNavigate={onNavigate} currentPage="about" darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      {/* Navigation - Only show PublicNav when not logged in */}
+      {!isLoggedIn && (
+        <PublicNav onNavigate={onNavigate} currentPage="about" darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      )}
       
       <div className="bg-gradient-to-br from-blue-500 to-purple-500 text-white py-20 px-4 pt-24">
         <div className="max-w-4xl mx-auto text-center">
@@ -395,7 +398,7 @@ export default function AboutPage({ onNavigate, darkMode = false, toggleDarkMode
         </motion.div>
       </div>
       
-      <Footer darkMode={darkMode} onNavigate={onNavigate} />
+      {/* Footer is rendered centrally by App to avoid duplicates */}
     </div>
   );
 }
