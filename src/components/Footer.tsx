@@ -18,6 +18,7 @@ interface FooterProps {
 export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: FooterProps) {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   return (
     <footer className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t mt-12`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -179,7 +180,7 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
               Privacy Policy
             </button>
             <button
-              onClick={() => setShowSupportModal(true)}
+              onClick={() => setShowTermsModal(true)}
               className={`text-sm ${darkMode ? 'text-gray-400 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'} transition-colors`}
             >
               Terms of Service
@@ -289,6 +290,120 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
                     <span className={darkMode ? 'text-blue-400' : 'text-blue-600'}>💬 Community Forum</span>
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Terms of Service Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowTermsModal(false)}>
+          <div 
+            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-white" />
+                </div>
+                <h2 className={`text-2xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>Terms of Service</h2>
+              </div>
+              <button 
+                onClick={() => setShowTermsModal(false)}
+                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
+              >
+                <CloseIcon className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Terms of Service */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  <h3 className={`text-xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>Terms of Service</h3>
+                </div>
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Acceptable Use</h4>
+                    <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <li>Use the platform for legitimate communication and learning purposes</li>
+                      <li>Respect other users and maintain a supportive community</li>
+                      <li>Do not use the service for illegal activities or harassment</li>
+                      <li>Do not attempt to reverse engineer or misuse our AI models</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>User Responsibilities</h4>
+                    <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <li>Provide accurate information when creating your account</li>
+                      <li>Maintain the security of your account credentials</li>
+                      <li>Report any security vulnerabilities or inappropriate content</li>
+                      <li>Comply with all applicable laws and regulations</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Service Limitations</h4>
+                    <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <li>AI interpretation accuracy may vary based on conditions</li>
+                      <li>Service availability is not guaranteed 100% of the time</li>
+                      <li>We reserve the right to modify or discontinue features</li>
+                      <li>Critical communications should be verified through multiple channels</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Intellectual Property</h4>
+                    <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <li>All platform content and technology are protected by copyright</li>
+                      <li>User-generated content remains the property of users</li>
+                      <li>Respect intellectual property rights of others</li>
+                      <li>Do not reproduce or distribute platform content without permission</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Termination</h4>
+                    <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <li>We may suspend or terminate accounts for violations</li>
+                      <li>Users may terminate their account at any time</li>
+                      <li>Upon termination, user data will be deleted per our privacy policy</li>
+                      <li>Certain provisions survive termination</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Limitation of Liability</h4>
+                    <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Vaani Setu is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages arising from the use of our service.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Governing Law</h4>
+                    <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      These terms are governed by the laws of India. Any disputes will be resolved in the courts of New Delhi, India.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Updates to Terms</h4>
+                    <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      We may update these terms periodically. Continued use of Vaani Setu constitutes acceptance of updated terms. Major changes will be communicated via email.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Last Updated */}
+              <div className={`pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                Last updated: November 4, 2024
               </div>
             </div>
           </div>
@@ -408,6 +523,113 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
                       We may update these policies periodically. Continued use of Vaani Setu constitutes acceptance of updated terms. Major changes will be communicated via email.
                     </p>
                   </div>
+                </div>
+              </div>
+
+              {/* Last Updated */}
+              <div className={`pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                Last updated: November 4, 2024
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Terms of Service Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowTermsModal(false)}>
+          <div 
+            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-white" />
+                </div>
+                <h2 className={`text-2xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>Terms of Service</h2>
+              </div>
+              <button 
+                onClick={() => setShowTermsModal(false)}
+                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
+              >
+                <CloseIcon className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              <div className="space-y-6 text-sm">
+                <div>
+                  <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Acceptable Use</h4>
+                  <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <li>Use the platform for legitimate communication and learning purposes</li>
+                    <li>Respect other users and maintain a supportive community</li>
+                    <li>Do not use the service for illegal activities or harassment</li>
+                    <li>Do not attempt to reverse engineer or misuse our AI models</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>User Responsibilities</h4>
+                  <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <li>Provide accurate information when creating your account</li>
+                    <li>Maintain the security of your account credentials</li>
+                    <li>Report any security vulnerabilities or inappropriate content</li>
+                    <li>Comply with all applicable laws and regulations</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Service Limitations</h4>
+                  <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <li>AI interpretation accuracy may vary based on conditions</li>
+                    <li>Service availability is not guaranteed 100% of the time</li>
+                    <li>We reserve the right to modify or discontinue features</li>
+                    <li>Critical communications should be verified through multiple channels</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Intellectual Property</h4>
+                  <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <li>All platform content and technology are protected by copyright</li>
+                    <li>User-generated content remains the property of users</li>
+                    <li>Respect intellectual property rights of others</li>
+                    <li>Do not reproduce or distribute platform content without permission</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Termination</h4>
+                  <ul className={`list-disc list-inside space-y-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <li>We may suspend or terminate accounts for violations</li>
+                    <li>Users may terminate their account at any time</li>
+                    <li>Upon termination, user data will be deleted per our privacy policy</li>
+                    <li>Certain provisions survive termination</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Limitation of Liability</h4>
+                  <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Vaani Setu is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages arising from the use of our service.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Governing Law</h4>
+                  <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    These terms are governed by the laws of India. Any disputes will be resolved in the courts of New Delhi, India.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className={`mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>Updates to Terms</h4>
+                  <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    We may update these terms periodically. Continued use of Vaani Setu constitutes acceptance of updated terms. Major changes will be communicated via email.
+                  </p>
                 </div>
               </div>
 

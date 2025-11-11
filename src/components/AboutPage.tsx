@@ -2,9 +2,9 @@
 import { Heart, Target, Users, Award, Linkedin, Plane } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PublicNav from './PublicNav';
-import shivanshImg from 'figma:asset/a637af40a1a41e19b730027c5387e41be72236e3.png';
-import adityaImg from 'figma:asset/e3d0fbae616eafb81d792fa8e20a687cb8982468.png';
-import aareevImg from 'figma:asset/27666179a65751a5bf9ce3ffaf46c9fa19b1404f.png';
+import aareevImg from '../assets/27666179a65751a5bf9ce3ffaf46c9fa19b1404f.png';
+import shivanshImg from '../assets/a637af40a1a41e19b730027c5387e41be72236e3.png';
+import adityaImg from '../assets/e3d0fbae616eafb81d792fa8e20a687cb8982468.png';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface AboutPageProps {

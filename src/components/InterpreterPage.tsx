@@ -59,8 +59,8 @@ export default function InterpreterPage() {
       hands.setOptions({
         maxNumHands: 2,
         modelComplexity: 1,
-        minDetectionConfidence: 0.7,
-        minTrackingConfidence: 0.5
+        minDetectionConfidence: 0.85,  // Increased from 0.7
+        minTrackingConfidence: 0.8       // Increased from 0.5
       });
 
       hands.onResults((results) => {
@@ -114,15 +114,27 @@ export default function InterpreterPage() {
             // Detect signs based on hand position and landmarks
             const currentTime = Date.now();
             if (currentTime - lastDetectionTime > detectionInterval) {
-              const detectedSign = detectSignFromLandmarks(landmarks, handedness.label);
-              if (detectedSign) {
-                setDetectedSign(detectedSign);
-                setDetectionHistory(prev => [detectedSign, ...prev].slice(0, 10));
-                
-                if (audioEnabled) {
-                  const utterance = new SpeechSynthesisUtterance(detectedSign);
-                  utterance.rate = 0.9;
-                  speechSynthesis.speak(utterance);
+              // Additional validation: ensure hand is reasonably positioned and sized
+            const palm = landmarks[0];
+            const wrist = landmarks[0];
+            const middleFingerTip = landmarks[12];
+            
+            // Check hand size (distance from wrist to middle fingertip)
+            const handSize = Math.sqrt(
+              Math.pow(middleFingerTip.x - wrist.x, 2) + Math.pow(middleFingerTip.y - wrist.y, 2)
+            );
+            
+            if (palm.x > 0.1 && palm.x < 0.9 && palm.y > 0.1 && palm.y < 0.9 && handSize > 0.15) {
+                const detectedSign = detectSignFromLandmarks(landmarks, handedness.label);
+                if (detectedSign) {
+                  setDetectedSign(detectedSign);
+                  setDetectionHistory(prev => [detectedSign, ...prev].slice(0, 10));
+                  
+                  if (audioEnabled) {
+                    const utterance = new SpeechSynthesisUtterance(detectedSign);
+                    utterance.rate = 0.9;
+                    speechSynthesis.speak(utterance);
+                  }
                 }
               }
               lastDetectionTime = currentTime;
@@ -169,11 +181,44 @@ export default function InterpreterPage() {
   }, [cameraActive, demoMode, audioEnabled]);
 
   // Enhanced ISL (Indian Sign Language) detection function
-  const detectSignFromLandmarks = (landmarks: mpHands.Landmark[], handedness: string): string => {
+  const detectSignFromLandmarks = (landmarks: mpHands.Landmark[], _handedness: string): string => {
     if (!landmarks || landmarks.length < 21) return '';
 
+    // Validate landmark quality - check if landmarks are reasonable
+    const validateLandmarks = (landmarks: mpHands.Landmark[]): boolean => {
+      // Check if hand is within reasonable bounds (not outside camera view)
+      for (const landmark of landmarks) {
+        if (landmark.x < -0.1 || landmark.x > 1.1 || landmark.y < -0.1 || landmark.y > 1.1) {
+          return false; // Hand is likely outside camera view
+        }
+        if (landmark.z < -0.5 || landmark.z > 0.5) {
+          return false; // Unreasonable depth value
+        }
+      }
+
+      // Check if hand landmarks form a reasonable hand shape
+      const palmCenter = landmarks[0];
+      const fingerTips = [landmarks[4], landmarks[8], landmarks[12], landmarks[16], landmarks[20]];
+      
+      // All fingertips should be reasonably close to palm center
+      for (const tip of fingerTips) {
+        const distance = Math.sqrt(
+          Math.pow(tip.x - palmCenter.x, 2) + Math.pow(tip.y - palmCenter.y, 2)
+        );
+        if (distance > 0.5) { // Too far from palm center
+          return false;
+        }
+      }
+
+      return true;
+    };
+
+    if (!validateLandmarks(landmarks)) {
+      return ''; // Invalid landmarks, don't detect anything
+    }
+
     // Helper function to calculate distance between two points
-    const distance = (p1: mpHands.Landmark, p2: mpHands.Landmark): number => {
+    const calculateDistance = (p1: mpHands.Landmark, p2: mpHands.Landmark): number => {
       return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
     };
 
@@ -183,8 +228,11 @@ export default function InterpreterPage() {
       const pip = landmarks[finger[2]];
       const mcp = landmarks[finger[0]];
       
-      // Check if tip is above PIP joint (more lenient for ISL)
-      return tip.y < pip.y - 0.02;
+      // More strict criteria for finger extension
+      const tipAbovePip = tip.y < pip.y - 0.03;
+      const tipAboveMcp = tip.y < mcp.y - 0.01;
+      
+      return tipAbovePip && tipAboveMcp;
     };
 
     // Helper function to check if finger is curled
@@ -223,84 +271,119 @@ export default function InterpreterPage() {
       isFingerCurled(fingers.pinky)
     ].filter(Boolean).length;
 
-    // Basic ISL Signs Detection
+    // Basic ISL Signs Detection - More accurate criteria
     
     // नमस्ते (Namaste) - Prayer position (both hands together)
-    if (landmarks[4].x < landmarks[5].x && landmarks[4].x > landmarks[17].x) {
-      // Both palms facing each other, fingers extended
-      if (extendedCount >= 8) {
-        return 'नमस्ते (Namaste)';
-      }
-    }
-
-    // हाँ (Yes) - Nodding motion or thumbs up
-    if (thumbExtended && extendedCount === 1) {
+    // This requires both hands to be detected, so we'll handle it differently
+    // For single hand, we'll focus on other signs
+    
+    // हाँ (Yes) - Thumbs up (only thumb extended, others curled)
+    if (thumbExtended && extendedCount === 1 && curledCount >= 3) {
       return 'हाँ (Yes)';
     }
 
-    // नहीं (No) - Head shake or index finger side to side
-    if (indexExtended && !middleExtended && !ringExtended && !pinkyExtended && !thumbExtended) {
+    // नहीं (No) - Index finger extended, others curled
+    if (indexExtended && !middleExtended && !ringExtended && !pinkyExtended && !thumbExtended && 
+        curledCount >= 3) {
       return 'नहीं (No)';
     }
 
-    // धन्यवाद (Thank you) - Hand to chin and forward
-    if (thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended) {
-      // Three fingers extended, touching chin area
-      if (landmarks[8].y < 0.4) { // Hand near face
-        return 'धन्यवाद (Dhanyavaad)';
-      }
+    // धन्यवाद (Thank you) - Hand to chin and forward (more specific)
+    if (thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended && 
+        landmarks[8].y < 0.4 && landmarks[4].y < 0.5) { // Hand near face area
+      return 'धन्यवाद (Dhanyavaad)';
     }
 
-    // मैं (I/Me) - Point to self
-    if (indexExtended && extendedCount === 1) {
-      if (landmarks[8].x > 0.4 && landmarks[8].x < 0.6) { // Near center of body
+    // मैं (I/Me) - Point to self (more specific positioning)
+    if (indexExtended && extendedCount === 1 && curledCount >= 3) {
+      // Pointing toward chest area (center of frame, lower position)
+      if (landmarks[8].x > 0.3 && landmarks[8].x < 0.7 && landmarks[8].y > 0.4) { 
         return 'मैं (I/Me)';
       }
     }
 
-    // आप (You) - Point forward
-    if (indexExtended && extendedCount === 1) {
-      if (landmarks[8].y < 0.6 && landmarks[8].x < 0.4) { // Pointing forward
+    // आप (You) - Point forward (more specific)
+    if (indexExtended && extendedCount === 1 && curledCount >= 3) {
+      // Pointing forward/upward (away from body)
+      if (landmarks[8].y < 0.6) { // Higher position indicates pointing away
         return 'आप (You)';
       }
     }
 
-    // ठीक है (OK) - Circle with thumb and index
-    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
+    // मदद (Help) - Both hands raised (simulate with one hand for now)
+    // In single hand mode, we'll use a specific gesture: open palm facing up
+    if (extendedCount === 5 && curledCount === 0) {
+      // Palm facing up (fingertips higher than palm center)
+      const avgFingertipY = [4, 8, 12, 16, 20].reduce((sum, i) => sum + landmarks[i].y, 0) / 5;
+      if (avgFingertipY < landmarks[0].y && landmarks[0].y < 0.7) {
+        return 'मदद (Help)';
+      }
+    }
+
+    // ठीक है (OK) - Circle with thumb and index (more precise)
+    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && !pinkyExtended && 
+        curledCount >= 2) {
       const thumbTip = landmarks[4];
       const indexTip = landmarks[8];
-      const distance = Math.sqrt(Math.pow(thumbTip.x - indexTip.x, 2) + Math.pow(thumbTip.y - indexTip.y, 2));
+      const thumbIndexDistance = calculateDistance(thumbTip, indexTip);
       
-      if (distance < 0.08) { // Thumb and index touching or very close
+      if (thumbIndexDistance < 0.06 && thumbIndexDistance > 0.02) { // More precise distance range
         return 'ठीक है (OK)';
       }
     }
 
-    // Open palm greeting
-    if (extendedCount === 5) {
-      return 'Hello';
+    // Open palm greeting (all fingers extended, palm facing forward)
+    if (extendedCount === 5 && curledCount === 0) {
+      // Check if palm is relatively flat (fingertips not too spread)
+      const fingerSpread = Math.max(...[4, 8, 12, 16, 20].map(i => landmarks[i].x)) - 
+                          Math.min(...[4, 8, 12, 16, 20].map(i => landmarks[i].x));
+      if (fingerSpread < 0.3) { // Reasonable spread for a greeting
+        return 'Hello';
+      }
     }
 
-    // Fist - Stop/Wait
-    if (extendedCount === 0) {
+    // Fist - Stop/Wait (all fingers curled)
+    if (extendedCount === 0 && curledCount >= 4) {
       return 'रुको (Stop/Wait)';
     }
 
-    // Peace sign - Victory/Good
-    if (!thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended) {
+    // Peace sign - Victory/Good (index and middle extended, others curled)
+    if (!thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended && 
+        curledCount >= 2) {
       return 'अच्छा (Good)';
     }
 
-    // I Love You sign
-    if (!thumbExtended && indexExtended && !middleExtended && !ringExtended && pinkyExtended) {
+    // I Love You sign (thumb, index, and pinky extended)
+    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && pinkyExtended && 
+        curledCount >= 1) {
       return 'प्रेम (Love)';
     }
 
-    // Return a random ISL sign from our list if no specific pattern is detected
-    // But prioritize common signs
-    const commonSigns = ['Hello', 'Thank you', 'Please', 'Sorry', 'हाँ (Yes)', 'नहीं (No)'];
-    const randomCommon = commonSigns[Math.floor(Math.random() * commonSigns.length)];
-    return randomCommon;
+    // Food/Eat - Hand to mouth gesture (thumb and fingers together, near mouth)
+    if (thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended && 
+        landmarks[8].y < 0.3) { // Hand near top of frame (mouth area)
+      return 'खाना (Food/Eat)';
+    }
+
+    // Water - W hand shape (thumb, index, middle extended, ring and pinky curled)
+    if (thumbExtended && indexExtended && middleExtended && !ringExtended && pinkyExtended && 
+        curledCount >= 1) {
+      return 'पानी (Water)';
+    }
+
+    // Home/House - Roof shape (both hands together, single hand: flat palm)
+    if (extendedCount === 5 && curledCount === 0) {
+      // Flat palm, horizontal (for roof gesture)
+      const fingerHeightDiff = Math.max(...[4, 8, 12, 16, 20].map(i => landmarks[i].y)) - 
+                              Math.min(...[4, 8, 12, 16, 20].map(i => landmarks[i].y));
+      if (fingerHeightDiff < 0.1 && landmarks[0].y > 0.3) { // Flat and not too high
+        return 'घर (Home)';
+      }
+    }
+
+    // No clear sign detected - return empty string instead of random sign
+    // This prevents false positive detections and random shuffling
+    return '';
   };
 
   // Demo mode animation
@@ -564,7 +647,7 @@ export default function InterpreterPage() {
                       </div>
                     )}
                     
-                    {/* Detection Overlay */}
+                    {/* Detection Overlay - Only show when hand is actually detected */}
                     <AnimatePresence>
                       {detectedSign && !isProcessing && (
                         <motion.div
@@ -581,22 +664,21 @@ export default function InterpreterPage() {
                       )}
                     </AnimatePresence>
 
-                    {/* Bounding Box Simulation */}
-                    <motion.div
-                      animate={{
-                        opacity: [0.7, 1, 0.7],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                      }}
-                      className="absolute top-1/4 left-1/4 w-1/2 h-1/2 border-4 border-green-400 rounded-xl shadow-[0_0_20px_rgba(74,222,128,0.6)]"
-                    >
-                      <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-green-400 shadow-[0_0_10px_rgba(74,222,128,0.6)]"></div>
-                      <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-green-400 shadow-[0_0_10px_rgba(74,222,128,0.6)]"></div>
-                      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-green-400 shadow-[0_0_10px_rgba(74,222,128,0.6)]"></div>
-                      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-green-400 shadow-[0_0_10px_rgba(74,222,128,0.6)]"></div>
-                    </motion.div>
+                    {/* Hand Detection Status Indicator */}
+                    {detectedSign && (
+                      <motion.div
+                        animate={{
+                          opacity: [0.7, 1, 0.7],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                        }}
+                        className="absolute top-4 right-4 bg-green-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm"
+                      >
+                        ✋ Hand Tracking Active
+                      </motion.div>
+                    )}
 
                     {/* Controls Overlay */}
                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-3">
@@ -629,7 +711,7 @@ export default function InterpreterPage() {
                       className="w-full h-full object-cover"
                     />
                     
-                    {/* Detection Overlay */}
+                    {/* Detection Overlay - Only show when hand is actually detected */}
                     <AnimatePresence>
                       {detectedSign && (
                         <motion.div
@@ -650,23 +732,6 @@ export default function InterpreterPage() {
                     <div className="absolute top-4 right-4 bg-purple-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">
                       Demo Mode
                     </div>
-
-                    {/* Bounding Box Simulation */}
-                    <motion.div
-                      animate={{
-                        opacity: [0.7, 1, 0.7],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                      }}
-                      className="absolute top-1/4 left-1/4 w-1/2 h-1/2 border-4 border-purple-400 rounded-xl shadow-[0_0_20px_rgba(192,132,252,0.6)]"
-                    >
-                      <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-purple-400 shadow-[0_0_10px_rgba(192,132,252,0.6)]"></div>
-                      <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-purple-400 shadow-[0_0_10px_rgba(192,132,252,0.6)]"></div>
-                      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-purple-400 shadow-[0_0_10px_rgba(192,132,252,0.6)]"></div>
-                      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-purple-400 shadow-[0_0_10px_rgba(192,132,252,0.6)]"></div>
-                    </motion.div>
 
                     {/* Controls Overlay */}
                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-3">
