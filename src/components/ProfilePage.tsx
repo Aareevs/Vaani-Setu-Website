@@ -7,6 +7,9 @@ import { useAnnouncer } from '../hooks/useAccessibility';
 interface ProfilePageProps {
   userName: string;
   onNavigate: (page: any) => void;
+  profileImage?: string | null;
+  onProfileImageUpdate?: (image: string | null) => void;
+  onLogout?: () => void;
 }
 
 interface UserSettings {
@@ -39,7 +42,7 @@ interface UserStats {
   lastActiveDate: string;
 }
 
-export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) {
+export default function ProfilePage({ userName, onNavigate, profileImage: initialProfileImage, onProfileImageUpdate, onLogout }: ProfilePageProps) {
   const { addToast } = useToast();
   const { announce } = useAnnouncer();
   
@@ -55,7 +58,7 @@ export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) 
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [profileEmoji, setProfileEmoji] = useState('👤');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(initialProfileImage || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form validation errors
@@ -228,7 +231,9 @@ export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) 
         
         const reader = new FileReader();
         reader.onloadend = () => {
-          setProfileImage(reader.result as string);
+          const imageData = reader.result as string;
+          setProfileImage(imageData);
+          onProfileImageUpdate?.(imageData);
           addToast('Profile image uploaded successfully!', 'success');
         };
         reader.onerror = () => {
@@ -248,6 +253,7 @@ export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    onProfileImageUpdate?.(null);
     addToast('Profile image removed', 'info');
   };
 
@@ -308,7 +314,8 @@ export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) 
 
   const handleLogout = () => {
     addToast('Logged out successfully', 'info');
-    // In a real app, this would handle logout logic
+    // Call parent logout handler to clear profile image and other session data
+    onLogout?.();
     onNavigate('login');
   };
 
@@ -345,28 +352,27 @@ export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-8"
+          className="bg-gradient-to-br from-blue-500 via-purple-500 to-purple-600 rounded-2xl shadow-lg overflow-hidden mb-8"
         >
-          <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-32"></div>
-          <div className="px-8 pb-8">
-            <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-16">
+          <div className="px-8 py-8">
+            <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
               {/* Avatar */}
               <div className="relative group">
-                <div className="w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full border-4 border-white dark:border-gray-800 flex items-center justify-center text-6xl shadow-xl overflow-hidden">
+                <div className="w-32 h-32 bg-white/20 backdrop-blur-sm rounded-full border-4 border-white/30 flex items-center justify-center text-6xl shadow-xl overflow-hidden">
                   {profileImage ? (
                     <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <span>{profileEmoji}</span>
+                    <span className="text-white">{profileEmoji}</span>
                   )}
                 </div>
               </div>
 
               {/* Info */}
-              <div className="flex-1 mt-4">
+              <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                   <div>
-                    <h1 className="text-3xl text-gray-900 dark:text-white mb-2">{displayName}</h1>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <h1 className="text-3xl text-white mb-2">{displayName}</h1>
+                    <div className="flex flex-wrap gap-4 text-sm text-white/80">
                       <div className="flex items-center gap-2">
                         <Mail className="w-4 h-4" />
                         <span>{displayEmail}</span>
@@ -384,7 +390,7 @@ export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) 
                   <div className="flex gap-2 self-start md:self-auto">
                     <button
                       onClick={handleExportData}
-                      className="px-4 py-3 bg-white text-green-600 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-lg border border-white/20"
+                      className="px-4 py-3 bg-white/90 text-green-600 rounded-xl hover:bg-white transition-colors flex items-center gap-2 shadow-lg border border-white/30"
                       title="Export Profile Data"
                     >
                       <Download className="w-4 h-4" />
@@ -392,7 +398,7 @@ export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) 
                     </button>
                     <button
                       onClick={handleShareProfile}
-                      className="px-4 py-3 bg-white text-purple-600 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-lg border border-white/20"
+                      className="px-4 py-3 bg-white/90 text-purple-600 rounded-xl hover:bg-white transition-colors flex items-center gap-2 shadow-lg border border-white/30"
                       title="Share Profile"
                     >
                       <Share2 className="w-4 h-4" />
@@ -404,7 +410,7 @@ export default function ProfilePage({ userName, onNavigate }: ProfilePageProps) 
                         setEditEmail(displayEmail);
                         setIsEditDialogOpen(true);
                       }}
-                      className="px-6 py-3 bg-white text-blue-600 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-lg border border-white/20"
+                      className="px-6 py-3 bg-white/90 text-blue-600 rounded-xl hover:bg-white transition-colors flex items-center gap-2 shadow-lg border border-white/30"
                     >
                       <Edit className="w-4 h-4" />
                       Edit Profile

@@ -12,9 +12,10 @@ interface HeaderProps {
   onLogout: () => void;
   darkMode: boolean;
   user?: string;
+  profileImage?: string | null;
 }
 
-export default function Header({ currentPage, onNavigate, darkMode, onLogout }: HeaderProps) {
+export default function Header({ currentPage, onNavigate, darkMode, onLogout, profileImage }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   
@@ -180,8 +181,12 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout }: 
                   aria-expanded={profileDropdownOpen}
                   aria-haspopup="true"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center overflow-hidden">
+                    {profileImage ? (
+                      <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-4 h-4 text-white" />
+                    )}
                   </div>
                   <ChevronDown className={`w-4 h-4 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                 </motion.button>
@@ -378,7 +383,13 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout }: 
                     aria-current={currentPage === 'profile' ? 'page' : undefined}
                     aria-label="Navigate to Profile"
                   >
-                    <User className="w-5 h-5" aria-hidden="true" />
+                    <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center overflow-hidden">
+                      {profileImage ? (
+                        <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-3 h-3 text-white" />
+                      )}
+                    </div>
                     <span>Profile</span>
                   </motion.button>
                   <motion.button

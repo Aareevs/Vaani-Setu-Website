@@ -25,6 +25,14 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
+  const [profileImage, setProfileImage] = useState<string | null>(() => {
+    try {
+      const stored = localStorage.getItem('vaani:profileImage');
+      return stored;
+    } catch (e) {
+      return null;
+    }
+  });
   // Initialize dark mode from localStorage or system preference
   const prefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -45,9 +53,23 @@ function App() {
     toast.success('Login Successful!', `Welcome back, ${name}!`);
   };
 
+  const handleProfileImageUpdate = (image: string | null) => {
+    setProfileImage(image);
+    try {
+      if (image) {
+        localStorage.setItem('vaani:profileImage', image);
+      } else {
+        localStorage.removeItem('vaani:profileImage');
+      }
+    } catch (e) {
+      // ignore localStorage errors
+    }
+  };
+
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserName('');
+    setProfileImage(null);
     setCurrentPage('landing');
     toast.info('Logged Out', 'You have been successfully logged out.');
   };
@@ -102,7 +124,7 @@ function App() {
       case 'settings':
         return <SettingsPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
       case 'profile':
-        return <ProfilePage userName={userName} onNavigate={navigateTo} />;
+        return <ProfilePage userName={userName} onNavigate={navigateTo} profileImage={profileImage} onProfileImageUpdate={handleProfileImageUpdate} onLogout={handleLogout} />;
       case '404':
         return <NotFoundPage onNavigate={navigateTo} />;
       default:
@@ -122,6 +144,7 @@ function App() {
           onNavigate={navigateTo} 
           darkMode={darkMode} 
           user={userName}
+           profileImage={profileImage}
           onLogout={handleLogout}
         />
       )}
