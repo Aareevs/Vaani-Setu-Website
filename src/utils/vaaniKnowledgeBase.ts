@@ -22,7 +22,7 @@ export const vaaniKnowledge = {
   features: {
     realTimeTranslation: "AI-powered real-time sign language to text and speech conversion",
     cameraDetection: "Advanced hand gesture detection through your device camera",
-    aiProcessing: "Machine learning algorithms with 95%+ accuracy for ISL",
+    aiProcessing: "Machine learning algorithms with 95%+ accuracy for ASL",
     offlineMode: "Premium feature - works without internet (Premium plan)",
     personalizedLearning: "Custom gesture learning adapted to your style (Premium plan)",
     community: "Vibrant forum for questions, discussions, and peer support",
@@ -39,7 +39,7 @@ export const vaaniKnowledge = {
         "Basic sign language translation",
         "Real-time camera access",
         "30 minutes of tutorial content",
-        "Indian Sign Language (ISL) support",
+        "American Sign Language (ASL) support",
         "Text-to-speech output",
         "Community forum access"
       ]
@@ -105,7 +105,7 @@ export const vaaniKnowledge = {
     {
       step: 2,
       title: "AI Processing",
-      description: "Machine learning algorithms trained on extensive ISL datasets interpret gestures with 95%+ accuracy"
+      description: "Machine learning algorithms trained on extensive ASL datasets interpret gestures with 95%+ accuracy"
     },
     {
       step: 3,
@@ -141,8 +141,8 @@ export const vaaniKnowledge = {
   }
 };
 
-// ISL (Indian Sign Language) Signs Database
-export const islSigns: { [key: string]: { description: string; imagePrompt: string } } = {
+// ASL (American Sign Language) Signs Database
+export const aslSigns: { [key: string]: { description: string; imagePrompt: string } } = {
   // Greetings
   hello: {
     description: "Wave your right hand with fingers extended, palm facing forward, moving side to side",
@@ -353,16 +353,16 @@ export const islSigns: { [key: string]: { description: string; imagePrompt: stri
 // Function to get sign information
 export function getSignInfo(word: string): { description: string; imagePrompt: string } | null {
   const normalizedWord = word.toLowerCase().trim();
-  return islSigns[normalizedWord] || null;
+  return aslSigns[normalizedWord] || null;
 }
 
-// Function to check if word is in ISL database
+// Function to check if word is in ASL database
 export function isSignAvailable(word: string): boolean {
   const normalizedWord = word.toLowerCase().trim();
-  return normalizedWord in islSigns;
+  return normalizedWord in aslSigns;
 }
 
 // Get all available signs
 export function getAllSigns(): string[] {
-  return Object.keys(islSigns);
+  return Object.keys(aslSigns);
 }

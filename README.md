@@ -1,11 +1,11 @@
-# Vaani Setu - Indian Sign Language Learning Platform
+# Vaani Setu - American Sign Language Learning Platform
 
-A comprehensive web application for learning Indian Sign Language (ISL) with interactive tutorials, real-time interpretation, and community features.
+A comprehensive web application for learning American Sign Language (ASL) with interactive tutorials, real-time interpretation, and community features.
 
 ## 🌟 Features
 
 ### Core Learning Features
-- **Interactive Tutorials**: Structured lessons covering basic to advanced ISL
+- **Interactive Tutorials**: Structured lessons covering basic to advanced ASL
 - **Real-time Interpretation**: Live sign language to text/speech conversion
 - **Practice Exercises**: Hands-on learning with feedback
 - **Progress Tracking**: Monitor your learning journey
@@ -170,7 +170,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🙏 Acknowledgments
 
 - Google Gemini AI for content generation
-- Indian Sign Language community for content validation
+- American Sign Language community for content validation
 - Open source community for various libraries and tools
 
 ## 📞 Support

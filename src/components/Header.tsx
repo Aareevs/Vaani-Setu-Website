@@ -214,7 +214,7 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout, pr
                       }}
                       className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                         darkMode
-                          ? 'text-gray-300 hover:bg-gray-700'
+                          ? 'text-gray-200 hover:bg-gray-700'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                       role="menuitem"
@@ -231,7 +231,7 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout, pr
                       }}
                       className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                         darkMode
-                          ? 'text-gray-300 hover:bg-gray-700'
+                          ? 'text-gray-200 hover:bg-gray-700'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                       role="menuitem"
@@ -337,7 +337,7 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout, pr
                         isActive
                           ? 'bg-gradient-to-r from-blue-600 to-purple-500 text-white shadow-lg'
                           : darkMode
-                          ? 'text-gray-300 hover:bg-gray-700/50'
+                          ? 'text-gray-200 hover:bg-gray-700/50'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
                       role="menuitem"
@@ -353,7 +353,7 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout, pr
                 
                 {/* Account Section */}
                 <div className={`pt-4 mt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <p className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2" role="heading" aria-level={2}>ACCOUNT</p>
+                  <p className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-300 mb-2" role="heading" aria-level={2}>ACCOUNT</p>
                   <motion.button
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -375,7 +375,7 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout, pr
                       currentPage === 'profile'
                         ? 'bg-gradient-to-r from-blue-600 to-purple-500 text-white shadow-lg'
                         : darkMode
-                        ? 'text-gray-300 hover:bg-gray-700/50'
+                        ? 'text-gray-200 hover:bg-gray-700/50'
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                     role="menuitem"
@@ -413,7 +413,7 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout, pr
                       currentPage === 'settings'
                         ? 'bg-gradient-to-r from-blue-600 to-purple-500 text-white shadow-lg'
                         : darkMode
-                        ? 'text-gray-300 hover:bg-gray-700/50'
+                        ? 'text-gray-200 hover:bg-gray-700/50'
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                     role="menuitem"

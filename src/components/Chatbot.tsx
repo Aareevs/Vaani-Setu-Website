@@ -1,13 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageCircle, X, Send, Bot, AlertCircle, Image as ImageIcon, Mic, MicOff, Square, Wifi, WifiOff } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, AlertCircle, Image as ImageIcon, Mic, Square, Wifi, WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { containsProfanity, getProfanityWarningMessage } from '../utils/profanityFilter';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { getGeminiResponse, testGeminiConnection } from '../utils/gemini';
 import { voiceRecorder } from '../utils/voiceRecorder';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeSanitize from 'rehype-sanitize';
 
 
 
@@ -266,12 +263,12 @@ export default function Chatbot({ darkMode }: ChatbotProps) {
                         <div className={`relative rounded-xl overflow-hidden p-2 ${darkMode ? 'bg-gradient-to-br from-blue-900/20 to-purple-900/20' : 'bg-gradient-to-br from-blue-50 to-purple-50'}`}>
                           <ImageWithFallback
                             src={message.imageUrl}
-                            alt={`ISL sign for ${message.signWord}`}
+        alt={`ASL sign for ${message.signWord}`}
                             className="w-full h-40 object-cover rounded-lg"
                           />
                           <div className={`absolute top-3 right-3 px-2 py-1 rounded-lg flex items-center gap-1 ${darkMode ? 'bg-gray-800/90' : 'bg-white/90'}`}>
                             <ImageIcon className={`w-3 h-3 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                            <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>ISL Sign</span>
+        <span className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>ASL Sign</span>
                           </div>
                         </div>
                       </div>

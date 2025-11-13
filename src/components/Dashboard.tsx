@@ -51,7 +51,7 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
           { label: 'Learning Progress', value: '67%', icon: TrendingUp, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50 dark:bg-green-900/20' },
         ],
         recentActivities: [
-          { action: 'Completed tutorial', name: 'Basic Greetings in ISL', time: '2 hours ago', icon: '✅' },
+ { action: 'Completed tutorial', name: 'Basic Greetings in ASL', time: '2 hours ago', icon: '✅' },
           { action: 'Interpreted signs', name: '15 signs detected', time: '5 hours ago', icon: '🎯' },
           { action: 'Posted in community', name: 'Tips for beginners', time: '1 day ago', icon: '💬' },
           { action: 'Earned achievement', name: 'Week Streak Badge', time: '2 days ago', icon: '🏆' },
@@ -123,7 +123,7 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
               👋
             </motion.span>
           </div>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-gray-600 dark:text-gray-300">
             Ready to break down communication barriers today?
           </p>
         </motion.div>
@@ -148,7 +148,7 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
                     </div>
                   </div>
                   <h3 className="text-4xl mb-2 text-gray-900 dark:text-white">{stat.value}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{stat.label}</p>
                 </div>
               </motion.div>
             );
@@ -204,7 +204,7 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
                 <h2 className="text-2xl">Continue Learning</h2>
               </div>
               <p className="mb-6 text-white/90 leading-relaxed">
-                Master Indian Sign Language with our interactive tutorials. Pick up where you left off.
+                Master American Sign Language with our interactive tutorials. Pick up where you left off.
               </p>
               <button className="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl hover:bg-white/90 transition-all hover:gap-3 shadow-lg">
                 Browse Tutorials
@@ -271,9 +271,9 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
                 <div className="text-2xl">{activity.icon}</div>
                 <div className="flex-1">
                   <p className="text-gray-900 dark:text-white mb-1">
-                    <span className="text-gray-600 dark:text-gray-400">{activity.action}:</span> {activity.name}
+                    <span className="text-gray-600 dark:text-gray-300">{activity.action}:</span> {activity.name}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{activity.time}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-300">{activity.time}</p>
                 </div>
               </motion.div>
             ))}

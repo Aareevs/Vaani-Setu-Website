@@ -103,7 +103,7 @@ export default function AboutPage({ onNavigate, darkMode = false, toggleDarkMode
                   <div className="flex-1">
                     <h3 className="text-xl mb-3 text-gray-900 dark:text-white">Large dataset of sign language</h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      Vaani Setu uses an extensive library of qualified Indian Sign Language (ISL) videos and datasets to maximize translation accuracy. Our AI is trained on thousands of signs across different contexts, regional variations, and signing styles.
+Vaani Setu uses an extensive library of qualified American Sign Language (ASL) videos and datasets to maximize translation accuracy. Our AI is trained on thousands of signs across different contexts, regional variations, and signing styles.
                     </p>
                   </div>
                 </div>
@@ -207,7 +207,7 @@ export default function AboutPage({ onNavigate, darkMode = false, toggleDarkMode
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-gray-500 dark:text-gray-400">Detection Accuracy</p>
-                      <p className="text-gray-900 dark:text-white">95%+ ISL Recognition</p>
+<p className="text-gray-900 dark:text-white">95%+ ASL Recognition</p>
                     </div>
                   </div>
                 </div>
@@ -257,7 +257,7 @@ export default function AboutPage({ onNavigate, darkMode = false, toggleDarkMode
                     Empowering India with real-time AI-powered sign language translation to bridge communication gaps.
                   </h3>
                   <p className="text-gray-300 text-sm mb-4">
-                    Vaani Setu is built by a passionate team of <span className="text-white">Indian developers, designers, and accessibility advocates</span> committed to making communication barrier-free for India's deaf and hard-of-hearing community. We specialize in Indian Sign Language (ISL) interpretation, helping millions access education, healthcare, employment, and public services with dignity and independence.
+Vaani Setu is built by a passionate team of <span className="text-white">developers, designers, and accessibility advocates</span> committed to making communication barrier-free for the deaf and hard-of-hearing community. We specialize in American Sign Language (ASL) interpretation, helping millions access education, healthcare, employment, and public services with dignity and independence.
                   </p>
                 </div>
                 <button 

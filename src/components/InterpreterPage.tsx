@@ -3,6 +3,8 @@ import { Video, VideoOff, Volume2, VolumeX, AlertCircle, CheckCircle, Maximize, 
 import { motion, AnimatePresence } from 'motion/react';
 import * as mpHands from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
+import { estimateFromImageData, getOpenPoseConfig } from '../utils/openpose/client';
+import type { OpenPoseHandResult } from '../utils/openpose/types';
 
 export default function InterpreterPage() {
   const [cameraActive, setCameraActive] = useState(false);
@@ -13,26 +15,17 @@ export default function InterpreterPage() {
   const [cameraError, setCameraError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
+  const [useOpenPose, setUseOpenPose] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Basic ISL (Indian Sign Language) signs for detection
+  // Basic ASL (American Sign Language) signs for demo display
   const mockSigns = [
-    // Greetings & Basic
-    'नमस्ते (Namaste)', 'Hello', 'Thank you', 'Sorry', 'Please', 'Good morning', 'Good night',
-    // Questions
-    'क्या (What?)', 'कहाँ (Where?)', 'कब (When?)', 'क्यों (Why?)', 'कैसे (How?)', 'कौन (Who?)',
-    // Responses
-    'हाँ (Yes)', 'नहीं (No)', 'ठीक है (OK)', 'समझ गया (Understood)',
-    // People & Relations
-    'मैं (I/Me)', 'आप (You)', 'वह (He/She)', 'मित्र (Friend)', 'परिवार (Family)', 'माँ (Mother)', 'पिता (Father)',
-    // Actions
-    'खाना (Eat)', 'पीना (Drink)', 'जाना (Go)', 'आना (Come)', 'बैठना (Sit)', 'खड़ा होना (Stand)',
-    // Emotions
-    'खुश (Happy)', 'दुखी (Sad)', 'गुस्सा (Angry)', 'डर (Fear)', 'प्रेम (Love)',
-    // Common phrases
-    'मदद करो (Help)', 'धन्यवाद (Dhanyavaad)', 'स्वागत (Welcome)', 'विदाई (Goodbye)'
+    'HELLO', 'YES', 'NO', 'THANK YOU', 'PLEASE', 'GOOD MORNING', 'GOOD NIGHT',
+    'WHO', 'WHAT', 'WHERE', 'WHEN', 'WHY', 'HOW',
+    'I LOVE YOU', 'OK', 'HELP', 'GOOD', 'BAD',
+    'A', 'B', 'C', 'L', 'I'
   ];
 
   // Real-time hand detection from camera using MediaPipe
@@ -44,112 +37,109 @@ export default function InterpreterPage() {
       
       if (!ctx) return;
 
-      let hands: mpHands.Hands;
+      let hands: mpHands.Hands | null = null;
       let camera: Camera;
       let lastDetectionTime = 0;
-      const detectionInterval = 1500; // Detect every 1.5 seconds
+      const detectionInterval = 350; // Faster, more responsive detection
 
-      // Initialize MediaPipe Hands
-      hands = new mpHands.Hands({
-        locateFile: (file) => {
-          return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
-        }
-      });
+      const config = getOpenPoseConfig();
+      const usingOpenPose = useOpenPose && !!config;
 
-      hands.setOptions({
-        maxNumHands: 2,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.85,  // Increased from 0.7
-        minTrackingConfidence: 0.8       // Increased from 0.5
-      });
+      if (!usingOpenPose) {
+        // Initialize MediaPipe Hands
+        hands = new mpHands.Hands({
+          locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
+          }
+        });
 
-      hands.onResults((results) => {
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw video frame
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Draw hand landmarks and connections
-        if (results.multiHandLandmarks && results.multiHandedness) {
-          for (let i = 0; i < results.multiHandLandmarks.length; i++) {
-            const landmarks = results.multiHandLandmarks[i];
-            const handedness = results.multiHandedness[i];
-            
-            // Draw hand landmarks
-            ctx.fillStyle = handedness.label === 'Right' ? '#00FF00' : '#FF0000';
-            ctx.strokeStyle = handedness.label === 'Right' ? '#00FF00' : '#FF0000';
-            ctx.lineWidth = 2;
-            
-            // Draw landmarks
-            landmarks.forEach((landmark) => {
-              const x = landmark.x * canvas.width;
-              const y = landmark.y * canvas.height;
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 0,
+          selfieMode: true,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+
+        const handleResults = (results: any) => {
+          // Skip expensive drawing; we only need landmarks for detection
+          if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+
+          if (results.multiHandLandmarks && results.multiHandedness) {
+            for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+              const landmarks = results.multiHandLandmarks[i];
+              const handedness = results.multiHandedness[i];
               
-              ctx.beginPath();
-              ctx.arc(x, y, 4, 0, 2 * Math.PI);
-              ctx.fill();
-            });
-            
-            // Draw connections (simplified)
-            const connections = [
-              [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
-              [0, 5], [5, 6], [6, 7], [7, 8], // Index
-              [0, 9], [9, 10], [10, 11], [11, 12], // Middle
-              [0, 13], [13, 14], [14, 15], [15, 16], // Ring
-              [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
-              [5, 9], [9, 13], [13, 17] // Palm
-            ];
-            
-            ctx.beginPath();
-            connections.forEach(([start, end]) => {
-              const startPoint = landmarks[start];
-              const endPoint = landmarks[end];
-              
-              ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
-              ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
-            });
-            ctx.stroke();
-            
-            // Detect signs based on hand position and landmarks
+              // Detect signs based on hand position and landmarks
+              const currentTime = Date.now();
+              if (currentTime - lastDetectionTime > detectionInterval) {
+                // Additional validation: ensure hand is reasonably positioned and sized
+                const wrist = landmarks[0];
+                const middleFingerTip = landmarks[12];
+                
+                // Check hand size (distance from wrist to middle fingertip)
+                const handSize = Math.sqrt(
+                  Math.pow(middleFingerTip.x - wrist.x, 2) + Math.pow(middleFingerTip.y - wrist.y, 2)
+                );
+                
+                if (wrist.x > 0.1 && wrist.x < 0.9 && wrist.y > 0.1 && wrist.y < 0.9 && handSize > 0.12) {
+                  const detected = detectSignFromLandmarks(landmarks, handedness.label);
+                  if (detected) {
+                    setDetectedSign(detected);
+                    setDetectionHistory((prev: string[]) => [detected, ...prev].slice(0, 10));
+                    
+                    if (audioEnabled) {
+                      const utterance = new SpeechSynthesisUtterance(detected);
+                      utterance.rate = 0.9;
+                      speechSynthesis.speak(utterance);
+                    }
+                  }
+                }
+                lastDetectionTime = currentTime;
+              }
+            }
+          }
+        };
+        hands.onResults(handleResults);
+      }
+
+      // Initialize camera
+      camera = new Camera(video, {
+        onFrame: async () => {
+          if (!usingOpenPose) {
+            if (hands) {
+              await hands.send({ image: video });
+            }
+          } else if (config) {
+            // Push frame to canvas and send to OpenPose server
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             const currentTime = Date.now();
-            if (currentTime - lastDetectionTime > detectionInterval) {
-              // Additional validation: ensure hand is reasonably positioned and sized
-            const palm = landmarks[0];
-            const wrist = landmarks[0];
-            const middleFingerTip = landmarks[12];
-            
-            // Check hand size (distance from wrist to middle fingertip)
-            const handSize = Math.sqrt(
-              Math.pow(middleFingerTip.x - wrist.x, 2) + Math.pow(middleFingerTip.y - wrist.y, 2)
-            );
-            
-            if (palm.x > 0.1 && palm.x < 0.9 && palm.y > 0.1 && palm.y < 0.9 && handSize > 0.15) {
-                const detectedSign = detectSignFromLandmarks(landmarks, handedness.label);
-                if (detectedSign) {
-                  setDetectedSign(detectedSign);
-                  setDetectionHistory(prev => [detectedSign, ...prev].slice(0, 10));
-                  
+            if (!isProcessing && currentTime - lastDetectionTime > detectionInterval) {
+              setIsProcessing(true);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+              const result = await estimateFromImageData(dataUrl, config);
+              if (result?.hands && result.hands.length > 0) {
+                const hand = result.hands[0];
+                const detected = detectSignFromOpenPose(hand);
+                if (detected) {
+                  setDetectedSign(detected);
+                  setDetectionHistory(prev => [detected, ...prev].slice(0, 10));
                   if (audioEnabled) {
-                    const utterance = new SpeechSynthesisUtterance(detectedSign);
+                    const utterance = new SpeechSynthesisUtterance(detected);
                     utterance.rate = 0.9;
                     speechSynthesis.speak(utterance);
                   }
                 }
               }
               lastDetectionTime = currentTime;
+              setIsProcessing(false);
             }
           }
-        }
-      });
-
-      // Initialize camera
-      camera = new Camera(video, {
-        onFrame: async () => {
-          await hands.send({ image: video });
         },
-        width: 1280,
-        height: 720
+        width: 640,
+        height: 480,
       });
 
       camera.start();
@@ -180,7 +170,7 @@ export default function InterpreterPage() {
     }
   }, [cameraActive, demoMode, audioEnabled]);
 
-  // Enhanced ISL (Indian Sign Language) detection function
+  // ASL (American Sign Language) detection function
   const detectSignFromLandmarks = (landmarks: mpHands.Landmark[], _handedness: string): string => {
     if (!landmarks || landmarks.length < 21) return '';
 
@@ -271,119 +261,72 @@ export default function InterpreterPage() {
       isFingerCurled(fingers.pinky)
     ].filter(Boolean).length;
 
-    // Basic ISL Signs Detection - More accurate criteria
-    
-    // नमस्ते (Namaste) - Prayer position (both hands together)
-    // This requires both hands to be detected, so we'll handle it differently
-    // For single hand, we'll focus on other signs
-    
-    // हाँ (Yes) - Thumbs up (only thumb extended, others curled)
-    if (thumbExtended && extendedCount === 1 && curledCount >= 3) {
-      return 'हाँ (Yes)';
-    }
-
-    // नहीं (No) - Index finger extended, others curled
-    if (indexExtended && !middleExtended && !ringExtended && !pinkyExtended && !thumbExtended && 
-        curledCount >= 3) {
-      return 'नहीं (No)';
-    }
-
-    // धन्यवाद (Thank you) - Hand to chin and forward (more specific)
-    if (thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended && 
-        landmarks[8].y < 0.4 && landmarks[4].y < 0.5) { // Hand near face area
-      return 'धन्यवाद (Dhanyavaad)';
-    }
-
-    // मैं (I/Me) - Point to self (more specific positioning)
-    if (indexExtended && extendedCount === 1 && curledCount >= 3) {
-      // Pointing toward chest area (center of frame, lower position)
-      if (landmarks[8].x > 0.3 && landmarks[8].x < 0.7 && landmarks[8].y > 0.4) { 
-        return 'मैं (I/Me)';
-      }
-    }
-
-    // आप (You) - Point forward (more specific)
-    if (indexExtended && extendedCount === 1 && curledCount >= 3) {
-      // Pointing forward/upward (away from body)
-      if (landmarks[8].y < 0.6) { // Higher position indicates pointing away
-        return 'आप (You)';
-      }
-    }
-
-    // मदद (Help) - Both hands raised (simulate with one hand for now)
-    // In single hand mode, we'll use a specific gesture: open palm facing up
+    // Basic ASL Handshapes and Gestures
+    // HELLO - Open palm facing forward (all fingers extended)
     if (extendedCount === 5 && curledCount === 0) {
-      // Palm facing up (fingertips higher than palm center)
-      const avgFingertipY = [4, 8, 12, 16, 20].reduce((sum, i) => sum + landmarks[i].y, 0) / 5;
-      if (avgFingertipY < landmarks[0].y && landmarks[0].y < 0.7) {
-        return 'मदद (Help)';
+      const fingerSpread = Math.max(...[4, 8, 12, 16, 20].map(i => landmarks[i].x)) - 
+                           Math.min(...[4, 8, 12, 16, 20].map(i => landmarks[i].x));
+      if (fingerSpread < 0.35) {
+        return 'HELLO';
       }
     }
 
-    // ठीक है (OK) - Circle with thumb and index (more precise)
-    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && !pinkyExtended && 
-        curledCount >= 2) {
+    // YES - Fist (all fingers curled)
+    if (extendedCount === 0 && curledCount >= 4) {
+      return 'YES';
+    }
+
+    // NO - Index + middle extended, others curled
+    if (!thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended && curledCount >= 2) {
+      return 'NO';
+    }
+
+    // OK - Thumb and index touching (circle)
+    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && !pinkyExtended && curledCount >= 2) {
       const thumbTip = landmarks[4];
       const indexTip = landmarks[8];
       const thumbIndexDistance = calculateDistance(thumbTip, indexTip);
-      
-      if (thumbIndexDistance < 0.06 && thumbIndexDistance > 0.02) { // More precise distance range
-        return 'ठीक है (OK)';
+      if (thumbIndexDistance < 0.06 && thumbIndexDistance > 0.02) {
+        return 'OK';
       }
     }
 
-    // Open palm greeting (all fingers extended, palm facing forward)
-    if (extendedCount === 5 && curledCount === 0) {
-      // Check if palm is relatively flat (fingertips not too spread)
-      const fingerSpread = Math.max(...[4, 8, 12, 16, 20].map(i => landmarks[i].x)) - 
-                          Math.min(...[4, 8, 12, 16, 20].map(i => landmarks[i].x));
-      if (fingerSpread < 0.3) { // Reasonable spread for a greeting
-        return 'Hello';
-      }
+    // I LOVE YOU - Thumb, index, pinky extended
+    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && pinkyExtended) {
+      return 'I LOVE YOU';
     }
 
-    // Fist - Stop/Wait (all fingers curled)
+    // Letter L - Thumb + index extended, others curled
+    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && !pinkyExtended && curledCount >= 2) {
+      return 'L';
+    }
+
+    // Letter I - Only pinky extended
+    if (!thumbExtended && !indexExtended && !middleExtended && !ringExtended && pinkyExtended) {
+      return 'I';
+    }
+
+    // Letter B - All four fingers extended, thumb curled across palm
+    if (!thumbExtended && indexExtended && middleExtended && ringExtended && pinkyExtended) {
+      return 'B';
+    }
+
+    // Letter A - Fist (thumb across the side) — approximate as all curled
     if (extendedCount === 0 && curledCount >= 4) {
-      return 'रुको (Stop/Wait)';
-    }
-
-    // Peace sign - Victory/Good (index and middle extended, others curled)
-    if (!thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended && 
-        curledCount >= 2) {
-      return 'अच्छा (Good)';
-    }
-
-    // I Love You sign (thumb, index, and pinky extended)
-    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && pinkyExtended && 
-        curledCount >= 1) {
-      return 'प्रेम (Love)';
-    }
-
-    // Food/Eat - Hand to mouth gesture (thumb and fingers together, near mouth)
-    if (thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended && 
-        landmarks[8].y < 0.3) { // Hand near top of frame (mouth area)
-      return 'खाना (Food/Eat)';
-    }
-
-    // Water - W hand shape (thumb, index, middle extended, ring and pinky curled)
-    if (thumbExtended && indexExtended && middleExtended && !ringExtended && pinkyExtended && 
-        curledCount >= 1) {
-      return 'पानी (Water)';
-    }
-
-    // Home/House - Roof shape (both hands together, single hand: flat palm)
-    if (extendedCount === 5 && curledCount === 0) {
-      // Flat palm, horizontal (for roof gesture)
-      const fingerHeightDiff = Math.max(...[4, 8, 12, 16, 20].map(i => landmarks[i].y)) - 
-                              Math.min(...[4, 8, 12, 16, 20].map(i => landmarks[i].y));
-      if (fingerHeightDiff < 0.1 && landmarks[0].y > 0.3) { // Flat and not too high
-        return 'घर (Home)';
-      }
+      return 'A';
     }
 
     // No clear sign detected - return empty string instead of random sign
     // This prevents false positive detections and random shuffling
     return '';
+  };
+
+  // Bridge to reuse heuristics with OpenPose results
+  const detectSignFromOpenPose = (hand: OpenPoseHandResult): string => {
+    const lm = hand.keypoints;
+    if (!lm || lm.length < 21) return '';
+    const mpLike: mpHands.Landmark[] = lm.map((p) => ({ x: p.x, y: p.y, z: 0 } as mpHands.Landmark));
+    return detectSignFromLandmarks(mpLike, hand.handedness || 'Right');
   };
 
   // Demo mode animation
@@ -436,11 +379,12 @@ export default function InterpreterPage() {
         throw new Error('UNSUPPORTED');
       }
 
-      // Request camera access with specific constraints
+      // Request camera access with optimized constraints for performance
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 30 },
           facingMode: 'user'
         } 
       });
@@ -526,72 +470,66 @@ export default function InterpreterPage() {
     speechSynthesis.speak(utterance);
   };
 
-  const basicISLSigns = [
+  const basicASLSigns = [
     { 
-      name: 'नमस्ते (Namaste)', 
-      emoji: '🙏', 
-      description: 'Press palms together at chest level',
+      name: 'HELLO', 
+      emoji: '👋', 
+      description: 'Open palm wave',
       category: 'Greetings'
     },
     { 
-      name: 'हाँ (Yes)', 
+      name: 'YES', 
       emoji: '👍', 
-      description: 'Single thumbs up gesture',
+      description: 'Fist nod (approximated as fist)',
       category: 'Responses'
     },
     { 
-      name: 'नहीं (No)', 
-      emoji: '👆', 
-      description: 'Index finger moved side to side',
+      name: 'NO', 
+      emoji: '✌️', 
+      description: 'Index+middle extended, others curled',
       category: 'Responses'
     },
     { 
-      name: 'धन्यवाद (Thank You)', 
+      name: 'THANK YOU', 
       emoji: '🤲', 
-      description: 'Touch chin with fingertips, move forward',
+      description: 'Flat hand from chin outward (reference)',
       category: 'Greetings'
     },
     { 
-      name: 'मैं (I/Me)', 
-      emoji: '👉', 
-      description: 'Point to your chest',
-      category: 'People'
+      name: 'I LOVE YOU', 
+      emoji: '🤟', 
+      description: 'Thumb, index, and pinky extended',
+      category: 'Emotions'
     },
     { 
-      name: 'आप (You)', 
-      emoji: '👈', 
-      description: 'Point forward at person',
-      category: 'People'
-    },
-    { 
-      name: 'ठीक है (OK)', 
+      name: 'OK', 
       emoji: '👌', 
-      description: 'Circle with thumb and index finger',
+      description: 'Circle with thumb and index',
       category: 'Responses'
     },
     { 
-      name: 'प्रेम (Love)', 
-      emoji: '🤟', 
-      description: 'Index finger and pinky extended',
-      category: 'Emotions'
+      name: 'A', 
+      emoji: '✊', 
+      description: 'Fist; thumb along side',
+      category: 'Alphabet'
     },
     { 
-      name: 'Hello', 
+      name: 'B', 
       emoji: '✋', 
-      description: 'Open palm facing forward',
-      category: 'Greetings'
+      description: 'Flat hand; thumb across palm',
+      category: 'Alphabet'
     },
     { 
-      name: 'मदद (Help)', 
-      emoji: '🆘', 
-      description: 'Both hands raised with palms up',
-      category: 'Actions'
+      name: 'L', 
+      emoji: '🫲', 
+      description: 'Index+thumb form an “L”',
+      category: 'Alphabet'
     },
     { 
-      name: 'खुश (Happy)', 
-      emoji: '😊', 
-      description: 'Both hands at chest, move outward',
-      category: 'Emotions'
+      name: 'I', 
+      emoji: '☝️', 
+      description: 'Only pinky extended',
+      category: 'Alphabet'
     },
     { 
       name: 'रुको (Stop)', 
@@ -923,6 +861,21 @@ export default function InterpreterPage() {
                               Demo Mode
                             </button>
                           </div>
+                          <div className="flex items-center justify-center gap-2 mt-4">
+                            <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white">
+                              <input
+                                type="checkbox"
+                                checked={useOpenPose}
+                                onChange={(e) => setUseOpenPose(e.target.checked)}
+                              />
+                              Use OpenPose backend
+                            </label>
+                          </div>
+                          {useOpenPose && !getOpenPoseConfig() && (
+                            <p className="text-center text-xs mt-2 text-red-600 dark:text-red-400">
+                              OpenPose backend not configured. Set `VITE_OPENPOSE_ENDPOINT` in `.env.local`.
+                            </p>
+                          )}
                         </>
                       )}
                     </div>
@@ -978,14 +931,14 @@ export default function InterpreterPage() {
 
           {/* Side Panel */}
           <div className="space-y-6">
-            {/* ISL Learning Guide */}
+            {/* ASL Learning Guide */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
             >
-              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">🎯 Learn Basic ISL</h3>
+              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">🎯 Learn Basic ASL</h3>
               
               <div className="space-y-4">
                 {/* Basic Hand Positions */}
@@ -1036,14 +989,14 @@ export default function InterpreterPage() {
               </div>
             </motion.div>
 
-            {/* Visual ISL Reference */}
+            {/* Visual ASL Reference */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
             >
-              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">📚 ISL Visual Reference</h3>
+              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">📚 ASL Visual Reference</h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Essential Greetings */}
@@ -1166,19 +1119,19 @@ export default function InterpreterPage() {
 
               <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                 <div className="text-xs text-yellow-800 dark:text-yellow-200">
-                  <strong>💡 Pro Tip:</strong> These are basic ISL signs. For complex conversations, learn finger spelling and grammar rules. Practice regularly for better fluency!
+              <strong>💡 Pro Tip:</strong> These are basic ASL signs. For complex conversations, learn finger spelling and grammar rules. Practice regularly for better fluency!
                 </div>
               </div>
             </motion.div>
 
-            {/* Detailed ISL Sign Formation Guide */}
+            {/* Detailed ASL Sign Formation Guide */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
             >
-              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">👐 How to Form ISL Signs</h3>
+              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">👐 How to Form ASL Signs</h3>
               
               <div className="space-y-4">
                 {/* Step-by-step guides */}
@@ -1292,18 +1245,18 @@ export default function InterpreterPage() {
               </ul>
             </motion.div>
 
-            {/* ISL Reference Guide */}
+            {/* ASL Reference Guide */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
             >
-              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">Basic ISL Signs Reference</h3>
+              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">Basic ASL Signs Reference</h3>
               
               {/* Category Filter */}
               <div className="mb-4 flex flex-wrap gap-2">
-                {['All', 'Greetings', 'Responses', 'People', 'Actions', 'Emotions'].map((category) => (
+                {['All', 'Greetings', 'Responses', 'Alphabet'].map((category) => (
                   <button
                     key={category}
                     className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
@@ -1314,7 +1267,7 @@ export default function InterpreterPage() {
               </div>
               
               <div className="space-y-3 max-h-80 overflow-y-auto">
-                {basicISLSigns.map((sign, index) => (
+                {basicASLSigns.map((sign, index) => (
                   <div
                     key={index}
                     className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer group"
@@ -1339,7 +1292,7 @@ export default function InterpreterPage() {
               
               <div className="mt-4 p-3 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl">
                 <p className="text-xs text-orange-700 dark:text-orange-300">
-                  💡 <strong>Tip:</strong> These are basic ISL signs. For complex conversations, consider professional interpretation services.
+                  💡 <strong>Tip:</strong> These are basic ASL signs. For complex conversations, consider professional interpretation services.
                 </p>
               </div>
             </motion.div>

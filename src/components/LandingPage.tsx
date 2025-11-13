@@ -29,94 +29,92 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
       
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 dark:from-gray-900 dark:via-blue-900/30 dark:to-purple-900/30 overflow-hidden">
+        {/* Subtle animated background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]" />
+        </div>
         {/* Animated Background */}
         <div className="absolute inset-0 overflow-hidden">
+          {/* Enhanced gradient orbs with more sophisticated animation */}
           <motion.div
             animate={{
               rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="absolute -top-40 -right-40 w-96 h-96 bg-purple-300/20 dark:bg-purple-500/10 rounded-full blur-3xl"
-          />
-          <motion.div
-            animate={{
-              rotate: [360, 0],
-              scale: [1.2, 1, 1.2],
+              scale: [1, 1.3, 1],
             }}
             transition={{
               duration: 25,
               repeat: Infinity,
               ease: "linear"
             }}
-            className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-300/20 dark:bg-blue-500/10 rounded-full blur-3xl"
+            className="absolute -top-60 -right-60 w-[500px] h-[500px] bg-gradient-to-br from-purple-400/30 via-purple-300/20 to-transparent dark:from-purple-600/20 dark:via-purple-500/10 dark:to-transparent rounded-full blur-3xl"
+          />
+          <motion.div
+            animate={{
+              rotate: [360, 0],
+              scale: [1.3, 1, 1.3],
+            }}
+            transition={{
+              duration: 30,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="absolute -bottom-60 -left-60 w-[500px] h-[500px] bg-gradient-to-br from-blue-400/30 via-blue-300/20 to-transparent dark:from-blue-600/20 dark:via-blue-500/10 dark:to-transparent rounded-full blur-3xl"
           />
           
-          {/* Floating Hand Signs */}
+          {/* Additional subtle floating elements */}
           <motion.div
             animate={{
-              y: [-20, 20, -20],
-              x: [-10, 10, -10],
+              y: [-30, 30, -30],
+              x: [-20, 20, -20],
+              rotate: [0, 180, 360],
             }}
             transition={{
-              duration: 8,
+              duration: 15,
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="absolute top-20 left-20 text-6xl opacity-10 dark:opacity-5"
-          >
-            👋
-          </motion.div>
+            className="absolute top-1/4 right-1/4 w-32 h-32 bg-gradient-to-br from-blue-200/20 to-purple-200/20 dark:from-blue-400/10 dark:to-purple-400/10 rounded-full blur-2xl"
+          />
           <motion.div
             animate={{
-              y: [20, -20, 20],
-              x: [10, -10, 10],
+              y: [30, -30, 30],
+              x: [20, -20, 20],
+              rotate: [360, 180, 0],
             }}
             transition={{
-              duration: 10,
+              duration: 18,
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="absolute top-40 right-32 text-6xl opacity-10 dark:opacity-5"
-          >
-            🤟
-          </motion.div>
-          <motion.div
-            animate={{
-              y: [-15, 15, -15],
-              x: [15, -15, 15],
-            }}
-            transition={{
-              duration: 12,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute bottom-32 left-1/3 text-6xl opacity-10 dark:opacity-5"
-          >
-            ✌️
-          </motion.div>
-          <motion.div
-            animate={{
-              y: [10, -10, 10],
-              x: [-15, 15, -15],
-            }}
-            transition={{
-              duration: 9,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute bottom-40 right-20 text-6xl opacity-10 dark:opacity-5"
-          >
-            👍
-          </motion.div>
+            className="absolute bottom-1/4 left-1/4 w-24 h-24 bg-gradient-to-br from-purple-200/20 to-blue-200/20 dark:from-purple-400/10 dark:to-blue-400/10 rounded-full blur-2xl"
+          />
+          
+          {/* Floating particles for added depth */}
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              animate={{
+                y: [Math.random() * -50, Math.random() * 50, Math.random() * -50],
+                x: [Math.random() * -30, Math.random() * 30, Math.random() * -30],
+                opacity: [0.3, 0.7, 0.3],
+              }}
+              transition={{
+                duration: 10 + Math.random() * 10,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: Math.random() * 2,
+              }}
+              className={`absolute w-2 h-2 bg-gradient-to-br from-blue-400/40 to-purple-400/40 dark:from-blue-300/30 dark:to-purple-300/30 rounded-full blur-sm ${
+                i % 2 === 0 ? 'top-1/3 left-1/3' : 'top-2/3 right-1/3'
+              }`}
+            />
+          ))}
         </div>
 
         {/* Content */}
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto py-20">
+          {/* Glass morphism background for content */}
+          <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/10 backdrop-blur-md rounded-3xl -z-10" />
           {/* Logo */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -124,12 +122,27 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             transition={{ duration: 0.8, type: "spring" }}
             className="flex items-center justify-center gap-4 mb-8"
           >
-            <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-2xl p-3 ring-4 ring-purple-100 dark:ring-purple-900/30">
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="w-20 h-20 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-2xl p-3 ring-4 ring-purple-100 dark:ring-purple-900/30 backdrop-blur-sm"
+            >
               <img src={logo} alt="Vaani Setu Logo" className="w-full h-full object-contain" />
-            </div>
-            <h1 className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent text-5xl md:text-7xl animate-gradient">
+            </motion.div>
+            <motion.h1 
+              className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent text-5xl md:text-7xl font-bold"
+              animate={{ 
+                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] 
+              }}
+              transition={{ 
+                duration: 5, 
+                repeat: Infinity, 
+                ease: "linear" 
+              }}
+              style={{ backgroundSize: '200% 200%' }}
+            >
               Vaani Setu
-            </h1>
+            </motion.h1>
           </motion.div>
 
           {/* Tagline */}
@@ -137,7 +150,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-xl md:text-3xl text-gray-700 dark:text-gray-200 mb-6 tracking-tight"
+            className="text-2xl md:text-4xl text-gray-700 dark:text-gray-200 mb-6 font-light tracking-wide"
           >
             Breaking Communication Barriers with AI
           </motion.p>
@@ -147,7 +160,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-lg text-gray-600 dark:text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed"
+            className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed font-light"
           >
             Experience the power of AI-driven sign language interpretation. 
             Connect seamlessly with real-time translation from sign language to text and speech.
@@ -158,29 +171,44 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="flex flex-wrap justify-center gap-6 mb-10"
+            className="flex flex-wrap justify-center gap-6 mb-12"
           >
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700">
-              <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">Users</span>
-                <p className="text-gray-900 dark:text-white">12,483+</p>
+            <motion.div 
+              whileHover={{ scale: 1.05, y: -2 }}
+              className="group flex items-center gap-3 px-6 py-4 bg-white/60 dark:bg-purple-700 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-purple-500 shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg group-hover:scale-110 transition-transform">
+                <Users className="w-6 h-6 text-white" />
               </div>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700">
-              <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               <div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">Accuracy</span>
-                <p className="text-gray-900 dark:text-white">95%+</p>
+                <span className="text-sm text-gray-500 dark:text-white font-medium">Active Users</span>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">12,483+</p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700">
-              <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.05, y: -2 }}
+              className="group flex items-center gap-3 px-6 py-4 bg-white/60 dark:bg-purple-700 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-purple-500 shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg group-hover:scale-110 transition-transform">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
               <div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">Speed</span>
-                <p className="text-gray-900 dark:text-white">Real-time</p>
+                <span className="text-sm text-gray-500 dark:text-white font-medium">Accuracy Rate</span>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">95%+</p>
               </div>
-            </div>
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.05, y: -2 }}
+              className="group flex items-center gap-3 px-6 py-4 bg-white/60 dark:bg-purple-700 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-purple-500 shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg group-hover:scale-110 transition-transform">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <span className="text-sm text-gray-500 dark:text-white font-medium">Processing Speed</span>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">Real-time</p>
+              </div>
+            </motion.div>
           </motion.div>
 
           {/* CTA Buttons */}
@@ -188,22 +216,27 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12"
+            className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12"
           >
-            <button
+            <motion.button
               onClick={() => onNavigate('signup')}
-              className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 flex items-center gap-2 relative overflow-hidden"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="group px-10 py-4 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center gap-3 relative overflow-hidden"
             >
-              <span className="relative z-10">Get Started</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform relative z-10" />
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-            <button
+              <span className="relative z-10 font-semibold text-lg">Get Started</span>
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform relative z-10" />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-700 via-purple-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse" />
+            </motion.button>
+            <motion.button
               onClick={() => onNavigate('login')}
-              className="px-8 py-4 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-blue-200 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-500"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-10 py-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-blue-600 dark:text-blue-400 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-blue-200 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-500 font-semibold text-lg"
             >
               Login
-            </button>
+            </motion.button>
           </motion.div>
 
           {/* Learn More Button */}
@@ -215,12 +248,22 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             className="mx-auto"
           >
             <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="flex flex-col items-center gap-3 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
             >
-              <span className="text-sm">Scroll to Learn More</span>
-              <ChevronDown className="w-5 h-5" />
+              <span className="text-sm font-medium">Discover More</span>
+              <motion.div
+                animate={{ y: [0, 5, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="w-6 h-10 border-2 border-gray-400 dark:border-gray-500 rounded-full flex justify-center group-hover:border-blue-500 dark:group-hover:border-blue-400 transition-colors"
+              >
+                <motion.div
+                  animate={{ y: [0, 12, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-1 h-3 bg-gray-400 dark:bg-gray-500 rounded-full mt-2 group-hover:bg-blue-500 dark:group-hover:bg-blue-400 transition-colors"
+                />
+              </motion.div>
             </motion.div>
           </motion.button>
         </div>
@@ -515,7 +558,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
                   <span className="text-gray-900 dark:text-white">How accurate is the sign language detection?</span>
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-                  Our AI models are trained on extensive datasets and achieve high accuracy rates for Indian Sign Language (ISL). Accuracy improves with good lighting, clear hand positioning, and moderate signing speed. We continuously update our models to enhance performance across different conditions and regional variations.
+Our AI models are trained on extensive datasets and achieve high accuracy rates for American Sign Language (ASL). Accuracy improves with good lighting, clear hand positioning, and moderate signing speed. We continuously update our models to enhance performance across different conditions and regional variations.
                 </AccordionContent>
               </AccordionItem>
 
@@ -533,7 +576,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
                   <span className="text-gray-900 dark:text-white">Which sign languages are supported?</span>
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-                  Currently, Vaani Setu supports Indian Sign Language (ISL) with plans to expand to American Sign Language (ASL), British Sign Language (BSL), and regional ISL variations in the near future. We're actively working to make the platform more inclusive and accessible globally.
+Currently, Vaani Setu supports American Sign Language (ASL) with plans to expand to British Sign Language (BSL) and other sign languages in the near future. We're actively working to make the platform more inclusive and accessible globally.
                 </AccordionContent>
               </AccordionItem>
 

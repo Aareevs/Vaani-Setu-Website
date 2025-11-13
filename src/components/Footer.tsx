@@ -255,7 +255,7 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
                   <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     <h4 className={`mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>What sign languages are supported?</h4>
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Currently, we support Indian Sign Language (ISL) with plans to add ASL, BSL, and regional variations soon.
+Currently, we support American Sign Language (ASL) with plans to add BSL and other variations soon.
                     </p>
                   </div>
                   <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>

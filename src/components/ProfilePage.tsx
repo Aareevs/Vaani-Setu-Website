@@ -427,7 +427,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
           <div className="lg:col-span-2 space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
+              <div className="bg-blue-600 rounded-2xl p-6 text-white shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-blue-100">Tutorials Completed</p>
@@ -436,7 +436,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                   <BookOpen className="w-8 h-8 text-blue-200" />
                 </div>
               </div>
-              <div className="bg-gradient-to-r from-green-500 to-teal-600 rounded-xl p-6 text-white">
+              <div className="bg-emerald-600 rounded-2xl p-6 text-white shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-green-100">Signs Interpreted</p>
@@ -445,7 +445,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                   <TrendingUp className="w-8 h-8 text-green-200" />
                 </div>
               </div>
-              <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-6 text-white">
+              <div className="bg-orange-500 rounded-2xl p-6 text-white shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-orange-100">Practice Streak</p>
@@ -454,7 +454,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                   <Target className="w-8 h-8 text-orange-200" />
                 </div>
               </div>
-              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 text-white">
+              <div className="bg-violet-600 rounded-2xl p-6 text-white shadow-md">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-indigo-100">Practice Time</p>

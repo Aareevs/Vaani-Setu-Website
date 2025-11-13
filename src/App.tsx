@@ -50,6 +50,11 @@ function App() {
     setIsLoggedIn(true);
     setUserName(name);
     setCurrentPage('dashboard');
+    // Don't show profile image on first login
+    if (!localStorage.getItem('vaani:hasLoggedInBefore')) {
+      setProfileImage(null);
+      localStorage.setItem('vaani:hasLoggedInBefore', 'true');
+    }
     toast.success('Login Successful!', `Welcome back, ${name}!`);
   };
 

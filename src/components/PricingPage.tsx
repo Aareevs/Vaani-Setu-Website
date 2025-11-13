@@ -33,7 +33,7 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
         'Basic sign language translation',
         'Real-time camera access',
         '30 minutes of tutorial content',
-        'Indian Sign Language (ISL) support',
+  'American Sign Language (ASL) support',
         'Text-to-speech output',
         'Community forum access',
       ],

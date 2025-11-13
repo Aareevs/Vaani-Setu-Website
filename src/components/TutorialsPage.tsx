@@ -48,17 +48,17 @@ export default function TutorialsPage() {
   const tutorials: Tutorial[] = [
     {
       id: 1,
-      title: 'Introduction to ISL',
+  title: 'Introduction to ASL',
       category: 'beginner',
       duration: '8 min',
       lessons: 5,
       thumbnail: 'https://images.unsplash.com/photo-1566550820504-46695b79fcd2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoYW5kcyUyMGdyZWV0aW5nJTIwaGVsbG98ZW58MXx8fHwxNzYyMjgyNzczfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-      description: 'Learn the basics of Indian Sign Language',
+      description: 'Learn the basics of American Sign Language',
       progress: 100,
-      overview: 'This comprehensive introduction to Indian Sign Language will help you understand the fundamentals of ISL communication. You\'ll learn about hand shapes, facial expressions, and the cultural context of sign language.',
+  overview: 'This comprehensive introduction to American Sign Language will help you understand the fundamentals of ASL communication. You\'ll learn about hand shapes, facial expressions, and the cultural context of sign language.',
       whatYouLearn: [
         'Basic hand shapes and positions',
-        'Importance of facial expressions in ISL',
+  'Importance of facial expressions in ASL',
         'Cultural sensitivity and deaf community awareness',
         'Fundamental signing techniques',
         'Common mistakes to avoid'
@@ -67,20 +67,20 @@ export default function TutorialsPage() {
       detailedLessons: [
         {
           id: 1,
-          title: 'What is ISL?',
+  title: 'What is ASL?',
           duration: '2 min',
           completed: true,
           locked: false,
-          description: 'Understand the history and importance of Indian Sign Language',
+          description: 'Understand the history and importance of American Sign Language',
           keyPoints: [
-            'ISL is a complete language with its own grammar',
-            'Over 4 million deaf people in India use ISL',
-            'ISL differs from other sign languages like ASL',
+  'ASL is a complete language with its own grammar',
+  'ASL is widely used across North America',
+  'ASL differs from other sign languages like BSL',
             'It uses manual and non-manual markers'
           ],
           steps: [
             'Watch the introduction video',
-            'Learn about ISL history',
+  'Learn about ASL history',
             'Understand the deaf community',
             'Practice basic awareness'
           ]
@@ -91,9 +91,9 @@ export default function TutorialsPage() {
           duration: '3 min',
           completed: true,
           locked: false,
-          description: 'Master the fundamental hand shapes used in ISL',
+  description: 'Master the fundamental hand shapes used in ASL',
           keyPoints: [
-            'There are 36 basic hand shapes in ISL',
+  'There are essential hand shapes used in ASL',
             'Palm orientation matters significantly',
             'Hand position relative to body is crucial',
             'Practice with both dominant and non-dominant hands'
@@ -112,7 +112,7 @@ export default function TutorialsPage() {
           duration: '2 min',
           completed: false,
           locked: false,
-          description: 'Discover how facial expressions are crucial in ISL grammar',
+  description: 'Discover how facial expressions are crucial in ASL grammar',
           keyPoints: [
             'Facial expressions are grammatical markers',
             'Eyebrow position changes meaning',
@@ -179,7 +179,7 @@ export default function TutorialsPage() {
       thumbnail: 'https://images.unsplash.com/photo-1730875650224-05f11eff82ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoYW5kcyUyMHdhdmluZyUyMHdlbGNvbWV8ZW58MXx8fHwxNzYyMjgyNzc0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
       description: 'Master everyday greetings and introductions',
       progress: 100,
-      overview: 'Learn how to greet people, introduce yourself, and engage in basic social interactions using ISL. These are essential signs you\'ll use every day.',
+  overview: 'Learn how to greet people, introduce yourself, and engage in basic social interactions using ASL. These are essential signs you\'ll use every day.',
       whatYouLearn: [
         'Hello, Hi, Goodbye signs',
         'Good morning, afternoon, evening signs',
@@ -187,7 +187,7 @@ export default function TutorialsPage() {
         'Asking "How are you?"',
         'Common responses to greetings'
       ],
-      prerequisites: ['Complete Introduction to ISL first (recommended)'],
+  prerequisites: ['Complete Introduction to ASL first (recommended)'],
       detailedLessons: [
         {
           id: 1,
@@ -216,7 +216,7 @@ export default function TutorialsPage() {
           duration: '3 min',
           completed: true,
           locked: false,
-          description: 'Time-specific greetings in ISL',
+  description: 'Time-specific greetings in ASL',
           keyPoints: [
             'Sign for "good" combined with time of day',
             'Morning: hand rises like sun',
@@ -237,7 +237,7 @@ export default function TutorialsPage() {
           duration: '2 min',
           completed: false,
           locked: false,
-          description: 'Introduce yourself in ISL',
+  description: 'Introduce yourself in ASL',
           keyPoints: [
             'Point to self for "my"',
             'Touch lips then extend for "name"',
@@ -322,7 +322,7 @@ export default function TutorialsPage() {
           duration: '2 min',
           completed: false,
           locked: false,
-          description: 'Farewell signs in ISL',
+  description: 'Farewell signs in ASL',
           keyPoints: [
             'Wave for "goodbye"',
             'Different waves for formal vs casual',
@@ -420,7 +420,7 @@ export default function TutorialsPage() {
         'Food preferences (like, dislike, allergies)',
         'Restaurant vocabulary'
       ],
-      prerequisites: ['Introduction to ISL'],
+  prerequisites: ['Introduction to ASL'],
       detailedLessons: [] // Would have detailed lessons like above
     },
     {
@@ -460,7 +460,7 @@ export default function TutorialsPage() {
         'Number combinations',
         'Using numbers in sentences (age, quantity, price)'
       ],
-      prerequisites: ['Hand Shapes & Positions from Introduction to ISL'],
+  prerequisites: ['Hand Shapes & Positions from Introduction to ASL'],
       detailedLessons: [] // Would have detailed lessons
     },
     {
@@ -480,7 +480,7 @@ export default function TutorialsPage() {
         'Describing objects with colors',
         'Color preferences and combinations'
       ],
-      prerequisites: ['Introduction to ISL'],
+  prerequisites: ['Introduction to ASL'],
       detailedLessons: [] // Would have detailed lessons
     },
     {
@@ -1048,7 +1048,7 @@ export default function TutorialsPage() {
                     <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                       <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
                       <p>Detailed lessons coming soon for this tutorial!</p>
-                      <p className="text-sm mt-2">Check out Introduction to ISL or Common Greetings for full lesson content.</p>
+  <p className="text-sm mt-2">Check out Introduction to ASL or Common Greetings for full lesson content.</p>
                     </div>
                   )}
                 </div>
@@ -1072,7 +1072,7 @@ export default function TutorialsPage() {
           className="mb-8"
         >
           <h1 className="text-3xl mb-2 text-gray-900 dark:text-white">Learn Sign Language</h1>
-          <p className="text-gray-600 dark:text-gray-400">Master ISL with interactive video tutorials</p>
+  <p className="text-gray-600 dark:text-gray-400">Master ASL with interactive video tutorials</p>
         </motion.div>
 
         {/* Search Bar */}

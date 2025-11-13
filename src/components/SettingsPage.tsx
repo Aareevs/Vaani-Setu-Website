@@ -5,6 +5,39 @@ import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Slider } from './ui/slider';
 
+// Settings type definitions to properly narrow union usage in render logic
+type SettingType = 'switch' | 'select' | 'slider';
+
+interface BaseSetting {
+  id: string;
+  label: string;
+  description: string;
+  type: SettingType;
+}
+
+interface SwitchSetting extends BaseSetting {
+  type: 'switch';
+  value?: boolean;
+  onChange?: (checked: boolean) => void;
+}
+
+interface SelectSetting extends BaseSetting {
+  type: 'select';
+  options: string[];
+}
+
+interface SliderSetting extends BaseSetting {
+  type: 'slider';
+}
+
+type SettingItem = SwitchSetting | SelectSetting | SliderSetting;
+
+interface SettingsSection {
+  title: string;
+  icon: React.ComponentType<any>;
+  settings: SettingItem[];
+}
+
 interface SettingsPageProps {
   darkMode: boolean;
   toggleDarkMode: () => void;
@@ -18,7 +51,7 @@ export default function SettingsPage({ darkMode, toggleDarkMode }: SettingsPageP
     // Apply font size to the root element
     document.documentElement.style.fontSize = `${fontSize}%`;
   }, [fontSize]);
-  const settingsSections = [
+  const settingsSections: SettingsSection[] = [
     {
       title: 'Appearance',
       icon: Palette,
@@ -71,9 +104,9 @@ export default function SettingsPage({ darkMode, toggleDarkMode }: SettingsPageP
         {
           id: 'signLanguage',
           label: 'Sign Language Variant',
-          description: 'Select regional ISL variant',
+      description: 'Select regional ASL variant',
           type: 'select',
-          options: ['Standard ISL', 'North Indian', 'South Indian', 'East Indian', 'West Indian'],
+      options: ['Standard ASL', 'Northeast', 'Midwest', 'West Coast', 'South'],
         },
       ],
     },
@@ -219,7 +252,7 @@ export default function SettingsPage({ darkMode, toggleDarkMode }: SettingsPageP
                                 <div className="space-y-2">
                                   <Slider 
                                     value={[fontSize]} 
-                                    onValueChange={(value) => setFontSize(value[0])}
+                                    onValueChange={(value: number[]) => setFontSize(value[0])}
                                     min={80}
                                     max={150}
                                     step={10}
@@ -230,7 +263,7 @@ export default function SettingsPage({ darkMode, toggleDarkMode }: SettingsPageP
                                 <div className="space-y-2">
                                   <Slider 
                                     value={[speechSpeed]} 
-                                    onValueChange={(value) => setSpeechSpeed(value[0])}
+                                    onValueChange={(value: number[]) => setSpeechSpeed(value[0])}
                                     min={25}
                                     max={200}
                                     step={25}

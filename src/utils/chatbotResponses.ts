@@ -1,4 +1,4 @@
-import { vaaniKnowledge, getSignInfo, isSignAvailable, getAllSigns } from './vaaniKnowledgeBase';
+import { vaaniKnowledge, getSignInfo, getAllSigns } from './vaaniKnowledgeBase';
 
 export interface BotResponse {
   text: string;
@@ -18,7 +18,7 @@ export function getEnhancedBotResponse(userMessage: string): BotResponse {
     
     if (signInfo) {
       return {
-        text: `Here's how to sign "${word}" in ISL (Indian Sign Language):\n\n📖 Description:\n${signInfo.description}\n\n👆 I'm showing you a visual representation of this sign above. Practice this gesture slowly and clearly for best results!\n\n💡 Tip: Use good lighting and keep your hands clearly visible when practicing.`,
+        text: `Here's how to sign "${word}" in ASL (American Sign Language):\n\n📖 Description:\n${signInfo.description}\n\n👆 I'm showing you a visual representation of this sign above. Practice this gesture slowly and clearly for best results!\n\n💡 Tip: Use good lighting and keep your hands clearly visible when practicing.`,
         imageUrl: `https://source.unsplash.com/600x400/?${encodeURIComponent(signInfo.imagePrompt)}`,
         signWord: word,
         shouldFetchImage: true
@@ -35,19 +35,8 @@ export function getEnhancedBotResponse(userMessage: string): BotResponse {
   // List available signs
   if (lowerMessage.match(/(?:what signs|which signs|list of signs|available signs|signs you know|show me signs|all signs)/)) {
     const allSigns = getAllSigns();
-    const categories = {
-      greetings: ['hello', 'namaste', 'goodbye', 'good morning', 'good night'],
-      basics: ['yes', 'no', 'please', 'thank you', 'sorry'],
-      family: ['mother', 'father', 'sister', 'brother'],
-      needs: ['water', 'food', 'help', 'toilet'],
-      numbers: ['one', 'two', 'three', 'four', 'five'],
-      emotions: ['happy', 'sad', 'angry', 'love'],
-      questions: ['what', 'where', 'when', 'why', 'how'],
-      emergency: ['emergency', 'danger', 'hospital', 'police']
-    };
-    
     return {
-      text: `I can show you ISL signs for ${allSigns.length}+ words! Here are some categories:\n\n🙏 Greetings: hello, namaste, goodbye\n✋ Basics: yes, no, please, thank you\n👨‍👩‍👧 Family: mother, father, sister, brother\n🍽️ Needs: water, food, help, toilet\n🔢 Numbers: 1-5 (and more)\n😊 Emotions: happy, sad, angry, love\n❓ Questions: what, where, when, why, how\n🚨 Emergency: emergency, danger, hospital, police\n\nTry: "show me sign for hello" or "how to sign thank you"`
+      text: `I can show you ASL signs for ${allSigns.length}+ words! Here are some categories:\n\n🙏 Greetings: hello, goodbye\n✋ Basics: yes, no, please, thank you\n👨‍👩‍👧 Family: mother, father, sister, brother\n🍽️ Needs: water, food, help, toilet\n🔢 Numbers: 1-5 (and more)\n😊 Emotions: happy, sad, angry, love\n❓ Questions: what, where, when, why, how\n🚨 Emergency: emergency, danger, hospital, police\n\nTry: "show me sign for hello" or "how to sign thank you"`
     };
   }
 
@@ -124,7 +113,7 @@ export function getEnhancedBotResponse(userMessage: string): BotResponse {
   // Accuracy
   if (lowerMessage.match(/(?:accurate|accuracy|reliable|success rate)/)) {
     return {
-      text: `🎯 Vaani Setu Accuracy:\n\nOur AI achieves ${vaaniKnowledge.platform.accuracy} accuracy for ISL!\n\nTips for Best Results:\n✓ Good lighting (natural light works best)\n✓ Clear hand positioning\n✓ Moderate signing speed\n✓ Keep both hands in frame\n✓ Plain background preferred\n✓ Avoid shadows on hands\n\n${vaaniKnowledge.platform.speed} - faster than ever!\n\nWe continuously improve our AI models based on user feedback.`
+      text: `🎯 Vaani Setu Accuracy:\n\nOur AI achieves ${vaaniKnowledge.platform.accuracy} accuracy for ASL!\n\nTips for Best Results:\n✓ Good lighting (natural light works best)\n✓ Clear hand positioning\n✓ Moderate signing speed\n✓ Keep both hands in frame\n✓ Plain background preferred\n✓ Avoid shadows on hands\n\n${vaaniKnowledge.platform.speed} - faster than ever!\n\nWe continuously improve our AI models based on user feedback.`
     };
   }
 
@@ -138,21 +127,21 @@ export function getEnhancedBotResponse(userMessage: string): BotResponse {
   // Languages Supported
   if (lowerMessage.match(/(?:languages|isl|asl|bsl|which language|supported)/)) {
     return {
-      text: `🌐 Supported Languages:\n\n✅ Currently Supported:\n🇮🇳 Indian Sign Language (ISL)\n\n🔜 Coming Soon:\n🇺🇸 American Sign Language (ASL)\n🇬🇧 British Sign Language (BSL)\n📍 Regional ISL variations\n\nWe're working hard to expand language support and make Vaani Setu accessible globally!`
+      text: `🌐 Supported Languages:\n\n✅ Currently Supported:\n🇺🇸 American Sign Language (ASL)\n\n🔜 Coming Soon:\n🇬🇧 British Sign Language (BSL)\n\nWe're working hard to expand language support and make Vaani Setu accessible globally!`
     };
   }
 
   // Greetings
   if (lowerMessage.match(/\\b(hi|hello|hey|greetings|good morning|good afternoon|good evening)\\b/)) {
     return {
-      text: `Hello! Welcome to Vaani Setu - Breaking Communication Barriers with AI! 👋\n\nI'm Vaani, your intelligent assistant. I can help you with:\n\n🎯 Sign language information\n📚 Platform features\n💰 Pricing plans\n🔒 Privacy & security\n📖 Tutorials & learning\n🤝 ISL sign demonstrations\n\nWhat would you like to know? Try asking:\n• "Show me sign for hello"\n• "How does Vaani Setu work?"\n• "What are the pricing plans?"`
+      text: `Hello! Welcome to Vaani Setu - Breaking Communication Barriers with AI! 👋\n\nI'm Vaani, your intelligent assistant. I can help you with:\n\n🎯 Sign language information\n📚 Platform features\n💰 Pricing plans\n🔒 Privacy & security\n📖 Tutorials & learning\n🤝 ASL sign demonstrations\n\nWhat would you like to know? Try asking:\n• "Show me sign for hello"\n• "How does Vaani Setu work?"\n• "What are the pricing plans?"`
     };
   }
 
   // Thank you
   if (lowerMessage.match(/\\b(thank|thanks|appreciate|grateful)\\b/)) {
     return {
-      text: `You're welcome! Happy to help! 😊\n\nRemember, I can show you ISL signs, explain features, answer questions about pricing, and much more.\n\nFeel free to ask anything about Vaani Setu!`
+      text: `You're welcome! Happy to help! 😊\n\nRemember, I can show you ASL signs, explain features, answer questions about pricing, and much more.\n\nFeel free to ask anything about Vaani Setu!`
     };
   }
 
@@ -165,6 +154,6 @@ export function getEnhancedBotResponse(userMessage: string): BotResponse {
 
   // Default/Fallback
   return {
-    text: `I'm not quite sure about that. Let me help you! 🤔\n\nI can assist with:\n\n📖 ISL Signs - Try: "show me sign for hello"\n ℹ️ Platform Info - Ask: "how does it work?"\n💰 Pricing - Ask: "what are the plans?"\n🎓 Tutorials - Ask: "what can I learn?"\n🔒 Privacy - Ask: "is it safe?"\n📊 Statistics - Ask: "what are the stats?"\n\nOr contact support:\n📧 ${vaaniKnowledge.support.email}\n📞 ${vaaniKnowledge.support.phone}`
+    text: `I'm not quite sure about that. Let me help you! 🤔\n\nI can assist with:\n\n📖 ASL Signs - Try: "show me sign for hello"\n ℹ️ Platform Info - Ask: "how does it work?"\n💰 Pricing - Ask: "what are the plans?"\n🎓 Tutorials - Ask: "what can I learn?"\n🔒 Privacy - Ask: "is it safe?"\n📊 Statistics - Ask: "what are the stats?"\n\nOr contact support:\n📧 ${vaaniKnowledge.support.email}\n📞 ${vaaniKnowledge.support.phone}`
   };
 }
