@@ -25,16 +25,8 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
-  const [profileImage, setProfileImage] = useState<string | null>(() => {
-    try {
-      const stored = localStorage.getItem('vaani:profileImage');
-      return stored;
-    } catch (e) {
-      return null;
-    }
-  });
-  // Initialize dark mode from localStorage or system preference
-  const prefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  // Initialize dark mode from localStorage, default to light mode
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem('vaani:darkMode');
@@ -42,7 +34,8 @@ function App() {
     } catch (e) {
       // ignore
     }
-    return prefersDark;
+    // Default to light mode (false)
+    return false;
   });
   const { toasts, toast, removeToast } = useToast();
 
@@ -54,6 +47,8 @@ function App() {
     if (!localStorage.getItem('vaani:hasLoggedInBefore')) {
       setProfileImage(null);
       localStorage.setItem('vaani:hasLoggedInBefore', 'true');
+      // Clear any existing profile image data
+      localStorage.removeItem('vaani:profileImage');
     }
     toast.success('Login Successful!', `Welcome back, ${name}!`);
   };
@@ -102,9 +97,45 @@ function App() {
 
   // Ensure the `dark` class is present on load and whenever darkMode state changes
   useEffect(() => {
-    if (darkMode) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    // Remove dark class on initial load to ensure light mode default
+    document.documentElement.classList.remove('dark');
+    
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [darkMode]);
+  
+  // Clear dark mode preference on first load if not explicitly set
+  useEffect(() => {
+    try {
+      const hasExplicitPreference = localStorage.getItem('vaani:darkMode') !== null;
+      if (!hasExplicitPreference) {
+        // Ensure light mode is the default
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  // Load profile image from localStorage after component mounts (only if user has logged in before)
+  useEffect(() => {
+    if (isLoggedIn) {
+      try {
+        // Only load profile image if user has logged in before
+        if (localStorage.getItem('vaani:hasLoggedInBefore')) {
+          const stored = localStorage.getItem('vaani:profileImage');
+          if (stored) {
+            setProfileImage(stored);
+          }
+        }
+      } catch (e) {
+        // ignore localStorage errors
+      }
+    }
+  }, [isLoggedIn]);
 
   const renderPage = () => {
     switch (currentPage) {

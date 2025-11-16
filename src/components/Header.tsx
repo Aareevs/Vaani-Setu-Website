@@ -182,10 +182,8 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout, pr
                   aria-haspopup="true"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center overflow-hidden">
-                    {profileImage ? (
+                    {profileImage && (
                       <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-4 h-4 text-white" />
                     )}
                   </div>
                   <ChevronDown className={`w-4 h-4 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
@@ -384,10 +382,8 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout, pr
                     aria-label="Navigate to Profile"
                   >
                     <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center overflow-hidden">
-                      {profileImage ? (
+                      {profileImage && (
                         <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-3 h-3 text-white" />
                       )}
                     </div>
                     <span>Profile</span>

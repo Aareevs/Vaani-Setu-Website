@@ -357,6 +357,10 @@ Vaani Setu is built by a passionate team of <span className="text-white">develop
                     src={member.avatar} 
                     alt={member.name}
                     className="w-full h-full object-cover"
+                    key={member.name}
+                    onError={() => {
+                      console.error('Image failed to load:', member.avatar);
+                    }}
                   />
                 </div>
                 <h3 className="text-lg mb-1 text-gray-900 dark:text-white">{member.name}</h3>

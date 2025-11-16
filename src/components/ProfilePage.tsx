@@ -3,6 +3,7 @@ import { Edit, Mail, MapPin, Calendar, Award, TrendingUp, Target, X, Eye, EyeOff
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '../hooks/useToast';
 import { useAnnouncer } from '../hooks/useAccessibility';
+import EmojiPicker from './EmojiPicker';
 
 interface ProfilePageProps {
   userName: string;
@@ -58,6 +59,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [profileEmoji, setProfileEmoji] = useState('👤');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(initialProfileImage || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -201,59 +203,27 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        addToast('Please select a valid image file (JPG, PNG, GIF, or WebP)', 'error');
-        return;
-      }
-      
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        addToast('Image size should be less than 5MB', 'error');
-        return;
-      }
-      
-      // Validate image dimensions
-      const img = new Image();
-      img.onload = () => {
-        if (img.width < 100 || img.height < 100) {
-          addToast('Image should be at least 100x100 pixels', 'error');
-          return;
-        }
-        if (img.width > 2000 || img.height > 2000) {
-          addToast('Image should not exceed 2000x2000 pixels', 'error');
-          return;
-        }
-        
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const imageData = reader.result as string;
-          setProfileImage(imageData);
-          onProfileImageUpdate?.(imageData);
-          addToast('Profile image uploaded successfully!', 'success');
-        };
-        reader.onerror = () => {
-          addToast('Failed to read the image file', 'error');
-        };
-        reader.readAsDataURL(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        setProfileImage(imageUrl);
+        setProfileEmoji('👤'); // Reset to default emoji when image is uploaded
+        onProfileImageUpdate?.(imageUrl);
       };
-      img.onerror = () => {
-        addToast('Invalid image file', 'error');
-      };
-      img.src = URL.createObjectURL(file);
+      reader.readAsDataURL(file);
     }
   };
 
   const handleRemoveImage = () => {
     setProfileImage(null);
+    setProfileEmoji('👤'); // Reset to default emoji when image is removed
+    onProfileImageUpdate?.(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    onProfileImageUpdate?.(null);
     addToast('Profile image removed', 'info');
   };
 
@@ -362,7 +332,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                   {profileImage ? (
                     <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-white">{profileEmoji}</span>
+                    <span>{profileEmoji}</span>
                   )}
                 </div>
               </div>
@@ -436,13 +406,13 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                   <BookOpen className="w-8 h-8 text-blue-200" />
                 </div>
               </div>
-              <div className="bg-emerald-600 rounded-2xl p-6 text-white shadow-md">
+              <div className="bg-yellow-500 dark:bg-yellow-600 rounded-2xl p-6 text-white shadow-md border border-yellow-400 dark:border-yellow-500">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-100">Signs Interpreted</p>
-                    <p className="text-3xl font-bold">{userStats.signsInterpreted}</p>
+                    <p className="text-white dark:text-yellow-100 font-medium">Signs Interpreted</p>
+                    <p className="text-3xl font-bold text-white">{userStats.signsInterpreted}</p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-green-200" />
+                  <TrendingUp className="w-8 h-8 text-yellow-200 dark:text-yellow-300" />
                 </div>
               </div>
               <div className="bg-orange-500 rounded-2xl p-6 text-white shadow-md">
@@ -454,13 +424,13 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                   <Target className="w-8 h-8 text-orange-200" />
                 </div>
               </div>
-              <div className="bg-violet-600 rounded-2xl p-6 text-white shadow-md">
+              <div className="bg-green-500 dark:bg-green-600 rounded-2xl p-6 text-white shadow-md border border-green-400 dark:border-green-500">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-indigo-100">Practice Time</p>
-                    <p className="text-3xl font-bold">{formatPracticeTime(userStats.totalPracticeTime)}</p>
+                    <p className="text-white dark:text-green-100 font-medium">Practice Time</p>
+                    <p className="text-3xl font-bold text-white">{formatPracticeTime(userStats.totalPracticeTime)}</p>
                   </div>
-                  <Calendar className="w-8 h-8 text-indigo-200" />
+                  <Calendar className="w-8 h-8 text-green-200 dark:text-green-300" />
                 </div>
               </div>
             </div>
@@ -640,7 +610,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                         {profileImage ? (
                           <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
-                          <span role="img" aria-label="Profile avatar">{profileEmoji}</span>
+                          <span>{profileEmoji}</span>
                         )}
                         {profileImage && (
                           <button
@@ -675,25 +645,29 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                           </p>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Or choose an avatar:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {profileEmojiOptions.map((emoji) => (
-                            <button
-                              key={emoji}
-                              type="button"
-                              onClick={() => {
-                                setProfileEmoji(emoji);
-                                handleRemoveImage();
-                              }}
-                              className={`w-10 h-10 rounded-lg flex items-center justify-center text-2xl transition-all ${
-                                profileEmoji === emoji && !profileImage
-                                  ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500'
-                                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                              }`}
-                            >
-                              {emoji}
-                            </button>
-                          ))}
+                        <div className="flex items-center gap-3">
+                          <div className="text-3xl">{profileEmoji}</div>
+                          <button
+                            type="button"
+                            onClick={() => setShowEmojiPicker(true)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            Choose Emoji
+                          </button>
                         </div>
+                        {showEmojiPicker && (
+                          <div className="mt-3">
+                            <EmojiPicker
+                              onEmojiSelect={(emoji) => {
+                                setProfileEmoji(emoji);
+                                setProfileImage(null); // Clear uploaded image when emoji is selected
+                                onProfileImageUpdate?.(null); // Notify parent that image is cleared
+                                setShowEmojiPicker(false);
+                              }}
+                              onClose={() => setShowEmojiPicker(false)}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

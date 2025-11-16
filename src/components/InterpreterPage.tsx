@@ -1,10 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { Video, VideoOff, Volume2, VolumeX, AlertCircle, CheckCircle, Maximize, Minimize } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import * as mpHands from '@mediapipe/hands';
-import { Camera } from '@mediapipe/camera_utils';
-import { estimateFromImageData, getOpenPoseConfig } from '../utils/openpose/client';
-import type { OpenPoseHandResult } from '../utils/openpose/types';
+
+// Types for MediaPipe HandLandmarker
+interface HandLandmark {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface HandLandmarkerResult {
+  landmarks: HandLandmark[][];
+  handednesses?: Array<{ categoryName: string; score: number }>;
+}
+
+interface HandLandmarker {
+  detectForVideo(video: HTMLVideoElement, timestamp: number): HandLandmarkerResult;
+}
+
 
 export default function InterpreterPage() {
   const [cameraActive, setCameraActive] = useState(false);
@@ -15,371 +28,555 @@ export default function InterpreterPage() {
   const [cameraError, setCameraError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
-  const [useOpenPose, setUseOpenPose] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showHandTrackingActive, setShowHandTrackingActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Basic ASL (American Sign Language) signs for demo display
-  const mockSigns = [
-    'HELLO', 'YES', 'NO', 'THANK YOU', 'PLEASE', 'GOOD MORNING', 'GOOD NIGHT',
-    'WHO', 'WHAT', 'WHERE', 'WHEN', 'WHY', 'HOW',
-    'I LOVE YOU', 'OK', 'HELP', 'GOOD', 'BAD',
-    'A', 'B', 'C', 'L', 'I'
+  const outputCanvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // MediaPipe HandLandmarker refs
+  const handLandmarkerRef = useRef<HandLandmarker | null>(null);
+  const lastVideoTimeRef = useRef<number>(-1);
+  const animationFrameRef = useRef<number | null>(null);
+  
+  // Gesture state machine (per hand)
+  const gestureStatesRef = useRef<Record<number, string>>({});
+  const lastHandYRef = useRef<Record<number, number>>({});
+  const stateTimersRef = useRef<Record<number, number>>({});
+  const lastHandXRef = useRef<Record<number, number>>({});
+  const handPositionsRef = useRef<Record<number, { x: number; y: number; sign: string }>>({});
+  
+  // Constants
+  const Y_MOVEMENT_THRESHOLD = 0.01;
+  const STATE_TIMEOUT = 120;
+  const UP_THRESHOLD = 0.04;
+  const DOWN_THRESHOLD = 0.02;
+  
+  const LANDMARK_CONNECTIONS = [
+    [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+    [0, 5], [5, 6], [6, 7], [7, 8], // Index finger
+    [9, 10], [10, 11], [11, 12], // Middle finger
+    [13, 14], [14, 15], [15, 16], // Ring finger
+    [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
+    [5, 9], [9, 13], [13, 17], [0, 9] // Palm base connections
   ];
 
-  // Real-time hand detection from camera using MediaPipe
-  useEffect(() => {
-    if (cameraActive && videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) return;
+  // Helper functions for finger detection
+  const isFingerUp = (tipY: number, baseMCPY: number): boolean => {
+    return (baseMCPY - tipY) > UP_THRESHOLD;
+  };
 
-      let hands: mpHands.Hands | null = null;
-      let camera: Camera;
-      let lastDetectionTime = 0;
-      const detectionInterval = 350; // Faster, more responsive detection
+  const isFingerDown = (tipY: number, baseMCPY: number): boolean => {
+    return (tipY - baseMCPY) > DOWN_THRESHOLD;
+  };
 
-      const config = getOpenPoseConfig();
-      const usingOpenPose = useOpenPose && !!config;
-
-      if (!usingOpenPose) {
-        // Initialize MediaPipe Hands
-        hands = new mpHands.Hands({
-          locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
-          }
-        });
-
-        hands.setOptions({
-          maxNumHands: 1,
-          modelComplexity: 0,
-          selfieMode: true,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        });
-
-        const handleResults = (results: any) => {
-          // Skip expensive drawing; we only need landmarks for detection
-          if (ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-          }
-
-          if (results.multiHandLandmarks && results.multiHandedness) {
-            for (let i = 0; i < results.multiHandLandmarks.length; i++) {
-              const landmarks = results.multiHandLandmarks[i];
-              const handedness = results.multiHandedness[i];
-              
-              // Detect signs based on hand position and landmarks
-              const currentTime = Date.now();
-              if (currentTime - lastDetectionTime > detectionInterval) {
-                // Additional validation: ensure hand is reasonably positioned and sized
-                const wrist = landmarks[0];
-                const middleFingerTip = landmarks[12];
-                
-                // Check hand size (distance from wrist to middle fingertip)
-                const handSize = Math.sqrt(
-                  Math.pow(middleFingerTip.x - wrist.x, 2) + Math.pow(middleFingerTip.y - wrist.y, 2)
-                );
-                
-                if (wrist.x > 0.1 && wrist.x < 0.9 && wrist.y > 0.1 && wrist.y < 0.9 && handSize > 0.12) {
-                  const detected = detectSignFromLandmarks(landmarks, handedness.label);
-                  if (detected) {
-                    setDetectedSign(detected);
-                    setDetectionHistory((prev: string[]) => [detected, ...prev].slice(0, 10));
-                    
-                    if (audioEnabled) {
-                      const utterance = new SpeechSynthesisUtterance(detected);
-                      utterance.rate = 0.9;
-                      speechSynthesis.speak(utterance);
-                    }
-                  }
-                }
-                lastDetectionTime = currentTime;
-              }
-            }
-          }
-        };
-        hands.onResults(handleResults);
-      }
-
-      // Initialize camera
-      camera = new Camera(video, {
-        onFrame: async () => {
-          if (!usingOpenPose) {
-            if (hands) {
-              await hands.send({ image: video });
-            }
-          } else if (config) {
-            // Push frame to canvas and send to OpenPose server
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const currentTime = Date.now();
-            if (!isProcessing && currentTime - lastDetectionTime > detectionInterval) {
-              setIsProcessing(true);
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-              const result = await estimateFromImageData(dataUrl, config);
-              if (result?.hands && result.hands.length > 0) {
-                const hand = result.hands[0];
-                const detected = detectSignFromOpenPose(hand);
-                if (detected) {
-                  setDetectedSign(detected);
-                  setDetectionHistory(prev => [detected, ...prev].slice(0, 10));
-                  if (audioEnabled) {
-                    const utterance = new SpeechSynthesisUtterance(detected);
-                    utterance.rate = 0.9;
-                    speechSynthesis.speak(utterance);
-                  }
-                }
-              }
-              lastDetectionTime = currentTime;
-              setIsProcessing(false);
-            }
-          }
-        },
-        width: 640,
-        height: 480,
-      });
-
-      camera.start();
-
-      return () => {
-        if (camera) {
-          camera.stop();
-        }
-        if (hands) {
-          hands.close();
-        }
-      };
-    } else if (demoMode) {
-      // Demo mode with simulated detection
-      const interval = setInterval(() => {
-        const randomSign = mockSigns[Math.floor(Math.random() * mockSigns.length)];
-        setDetectedSign(randomSign);
-        setDetectionHistory(prev => [randomSign, ...prev].slice(0, 10));
-        
-        if (audioEnabled) {
-          const utterance = new SpeechSynthesisUtterance(randomSign);
-          utterance.rate = 0.9;
-          speechSynthesis.speak(utterance);
-        }
-      }, 3000 + Math.random() * 2000);
-
-      return () => clearInterval(interval);
+  // Detects only the STATIC hand shape for the CURRENT frame
+  const detectStaticSign = (landmarks: HandLandmark[]): string => {
+    if (!landmarks || landmarks.length < 21) return "No Hand";
+    
+    // Extract key joint Y-coordinates
+    const thumbTipY = landmarks[4].y;
+    const thumbBaseY = landmarks[2].y;
+    const indexTipY = landmarks[8].y;
+    const indexBaseY = landmarks[5].y;
+    const middleTipY = landmarks[12].y;
+    const middleBaseY = landmarks[9].y;
+    const ringTipY = landmarks[16].y;
+    const ringBaseY = landmarks[13].y;
+    const pinkyTipY = landmarks[20].y;
+    const pinkyBaseY = landmarks[17].y;
+    
+    // Determine state of each finger
+    const isThumbUp = isFingerUp(thumbTipY, thumbBaseY);
+    const isIndexUp = isFingerUp(indexTipY, indexBaseY);
+    const isMiddleUp = isFingerUp(middleTipY, middleBaseY);
+    const isRingUp = isFingerUp(ringTipY, ringBaseY);
+    const isPinkyUp = isFingerUp(pinkyTipY, pinkyBaseY);
+    
+    const isIndexDown = isFingerDown(indexTipY, indexBaseY);
+    const isMiddleDown = isFingerDown(middleTipY, middleBaseY);
+    const isRingDown = isFingerDown(ringTipY, ringBaseY);
+    const isPinkyDown = isFingerDown(pinkyTipY, pinkyBaseY);
+    
+    // Classification Logic
+    // 1. "I Love You" (ILY Sign - Index, Pinky, Thumb Up)
+    if (isIndexUp && isPinkyUp && isThumbUp && isMiddleDown && isRingDown) {
+      return "I Love You (ILY)";
     }
-  }, [cameraActive, demoMode, audioEnabled]);
+    
+    // 2. "Thumbs Up" = Yes
+    if (isThumbUp && isIndexDown && isMiddleDown && isRingDown && isPinkyDown) {
+      return "Yes";
+    }
+    
+    // 2b. "Thumbs Down" = No
+    const thumbTipForNo = landmarks[4];
+    const thumbIPForNo = landmarks[3];
+    const thumbMCP = landmarks[2];
+    // Thumb is down if tip Y is significantly below the base
+    const isThumbDown = (thumbTipForNo.y - thumbMCP.y) > 0.05 && thumbTipForNo.y > thumbIPForNo.y;
+    if (isThumbDown && isIndexDown && isMiddleDown && isRingDown && isPinkyDown) {
+      return "No";
+    }
+    
+    // 3. Closed Fist
+    if (isIndexDown && isMiddleDown && isRingDown && isPinkyDown) {
+      return "Closed Fist";
+    }
+    
+    // 4. Open Hand (All fingers up) = Hello
+    if (isIndexUp && isMiddleUp && isRingUp && isPinkyUp && isThumbUp) {
+      return "Hello";
+    }
+    
+    // 5. OK Sign (Circle with thumb and index)
+    const thumbTipForOK = landmarks[4];
+    const indexTip = landmarks[8];
+    
+    // Calculate distance between thumb tip and index tip
+    const thumbIndexDistance = Math.sqrt(
+      Math.pow(thumbTipForOK.x - indexTip.x, 2) + 
+      Math.pow(thumbTipForOK.y - indexTip.y, 2) + 
+      Math.pow(thumbTipForOK.z - indexTip.z, 2)
+    );
+    
+    // Check if thumb and index form a circle (tips are close together)
+    // and other fingers are extended or slightly curled
+    const isOKSign = thumbIndexDistance < 0.08 && 
+                     thumbIndexDistance > 0.02 &&
+                     isMiddleDown && 
+                     isRingDown && 
+                     isPinkyDown;
+    
+    if (isOKSign) {
+      return "OK";
+    }
+    
+    // 6. Index Finger Up (ASL '1')
+    if (isIndexUp && isMiddleDown && isRingDown && isPinkyDown) {
+      return "Index Finger Up";
+    }
+    
+    // Default Fallback
+    return "Hand Detected - Unknown Sign";
+  };
 
-  // ASL (American Sign Language) detection function
-  const detectSignFromLandmarks = (landmarks: mpHands.Landmark[], _handedness: string): string => {
-    if (!landmarks || landmarks.length < 21) return '';
-
-    // Validate landmark quality - check if landmarks are reasonable
-    const validateLandmarks = (landmarks: mpHands.Landmark[]): boolean => {
-      // Check if hand is within reasonable bounds (not outside camera view)
-      for (const landmark of landmarks) {
-        if (landmark.x < -0.1 || landmark.x > 1.1 || landmark.y < -0.1 || landmark.y > 1.1) {
-          return false; // Hand is likely outside camera view
+  // Tracks dynamic gestures over time using a state machine (per hand)
+  const trackDynamicGestures = (staticSign: string, landmarks: HandLandmark[], handIndex: number): string => {
+    const currentHandY = landmarks[0].y; // Wrist Y coordinate
+    
+    // Initialize state for this hand if it's new
+    if (gestureStatesRef.current[handIndex] === undefined) {
+      gestureStatesRef.current[handIndex] = "none";
+      lastHandYRef.current[handIndex] = 0;
+      stateTimersRef.current[handIndex] = 0;
+    }
+    
+    switch (gestureStatesRef.current[handIndex]) {
+      case "none":
+        if (staticSign === "Yes") {
+          // START: Found the first part of "Good Morning" (Yes -> Hello/Open Hand)
+          gestureStatesRef.current[handIndex] = "lookingForUpwardMovement";
+          lastHandYRef.current[handIndex] = currentHandY;
+          stateTimersRef.current[handIndex] = 0;
         }
-        if (landmark.z < -0.5 || landmark.z > 0.5) {
-          return false; // Unreasonable depth value
+        // Note: Stop gesture is now handled in drawResults for two-hand detection
+        return staticSign;
+        
+      case "lookingForUpwardMovement":
+        stateTimersRef.current[handIndex]++;
+        if (stateTimersRef.current[handIndex] > STATE_TIMEOUT) {
+          // Took too long, reset state
+          gestureStatesRef.current[handIndex] = "none";
+          return staticSign;
         }
-      }
+        
+        // Check if hand is moving up (Y coordinate decreases)
+        const isMovingUp = (lastHandYRef.current[handIndex] - currentHandY) > Y_MOVEMENT_THRESHOLD;
+        if (isMovingUp) {
+          // Hand is moving up, check if shape is now "Hello" (Open Hand)
+          if (staticSign.includes("Hello")) {
+            // COMPLETE: Gesture sequence matched!
+            gestureStatesRef.current[handIndex] = "none"; // Reset for next gesture
+            return "Good Morning (ISL)";
+          }
+          
+          // Hand is moving up, but not yet open, update position
+          lastHandYRef.current[handIndex] = currentHandY;
+          return "Yes (moving...)";
+        }
+        
+        // If sign changes to something else, cancel the gesture
+        if (staticSign !== "Yes") {
+          gestureStatesRef.current[handIndex] = "none";
+          return staticSign;
+        }
+        
+        // Not moving up, but still Yes
+        return "Yes";
+        
+      default:
+        gestureStatesRef.current[handIndex] = "none";
+        return staticSign;
+    }
+  };
 
-      // Check if hand landmarks form a reasonable hand shape
-      const palmCenter = landmarks[0];
-      const fingerTips = [landmarks[4], landmarks[8], landmarks[12], landmarks[16], landmarks[20]];
+  // Draw landmarks and connections on canvas
+  const drawResults = (results: HandLandmarkerResult) => {
+    const canvas = outputCanvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.save();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    let detectedSigns: string[] = [];
+    
+    if (results.landmarks && results.landmarks.length > 0) {
+      // Store current hand positions for two-hand gesture detection
+      const currentHandPositions: Array<{ x: number; y: number; sign: string; landmarks: HandLandmark[] }> = [];
       
-      // All fingertips should be reasonably close to palm center
-      for (const tip of fingerTips) {
+      // Loop through each detected hand
+      for (let i = 0; i < results.landmarks.length; i++) {
+        const landmarks = results.landmarks[i];
+        const scaleX = canvas.width;
+        const scaleY = canvas.height;
+        
+        // 1. Draw connections
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 3;
+        for (const connection of LANDMARK_CONNECTIONS) {
+          const start = landmarks[connection[0]];
+          const end = landmarks[connection[1]];
+          ctx.beginPath();
+          ctx.moveTo(start.x * scaleX, start.y * scaleY);
+          ctx.lineTo(end.x * scaleX, end.y * scaleY);
+          ctx.stroke();
+        }
+        
+        // 2. Draw landmarks
+        ctx.fillStyle = '#ef4444';
+        for (let j = 0; j < landmarks.length; j++) {
+          const landmark = landmarks[j];
+          ctx.beginPath();
+          ctx.arc(landmark.x * scaleX, landmark.y * scaleY, 5, 0, 2 * Math.PI);
+          ctx.fill();
+          
+          if ([4, 8, 12, 16, 20].includes(j)) {
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(landmark.x * scaleX, landmark.y * scaleY, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#ef4444';
+          }
+        }
+        
+        // 3. Gesture Detection Logic for this hand
+        const staticSign = detectStaticSign(landmarks);
+        const wrist = landmarks[0];
+        
+        // Store hand position for two-hand detection
+        currentHandPositions.push({
+          x: wrist.x,
+          y: wrist.y,
+          sign: staticSign,
+          landmarks: landmarks
+        });
+        
+        // Track single-hand dynamic gestures
+        const finalSign = trackDynamicGestures(staticSign, landmarks, i);
+        detectedSigns.push(finalSign);
+        
+        // Update last position for this hand
+        lastHandYRef.current[i] = landmarks[0].y;
+        lastHandXRef.current[i] = landmarks[0].x;
+      }
+      
+      // 4. Check for two-hand "Stop" gesture (one hand slapping onto other palm)
+      if (results.landmarks.length === 2 && currentHandPositions.length === 2) {
+        const hand0 = currentHandPositions[0];
+        const hand1 = currentHandPositions[1];
+        
+        // Check if both hands are in "Hello" (Open Hand) position
+        if ((hand0.sign === "Hello" || hand0.sign === "Open Hand") && 
+            (hand1.sign === "Hello" || hand1.sign === "Open Hand")) {
+          // Check if one hand is moving downward toward the other
+          // Use previous Y position if available, otherwise use current position (no movement detected)
+          const hand0PrevY = lastHandYRef.current[0] !== undefined ? lastHandYRef.current[0] : hand0.y;
+          const hand1PrevY = lastHandYRef.current[1] !== undefined ? lastHandYRef.current[1] : hand1.y;
+          
+          // Calculate distance between hands
         const distance = Math.sqrt(
-          Math.pow(tip.x - palmCenter.x, 2) + Math.pow(tip.y - palmCenter.y, 2)
-        );
-        if (distance > 0.5) { // Too far from palm center
-          return false;
+            Math.pow((hand0.x - hand1.x) * canvas.width, 2) + 
+            Math.pow((hand0.y - hand1.y) * canvas.height, 2)
+          );
+          
+          // Check if one hand is moving down quickly (slapping motion)
+          const hand0MovingDown = (hand0.y - hand0PrevY) > (Y_MOVEMENT_THRESHOLD * 1.5);
+          const hand1MovingDown = (hand1.y - hand1PrevY) > (Y_MOVEMENT_THRESHOLD * 1.5);
+          
+          // Check if hands are getting closer (within reasonable distance for a slap)
+          const handsAreClose = distance < 150; // pixels
+          
+          if ((hand0MovingDown || hand1MovingDown) && handsAreClose) {
+            // Detect which hand is slapping (the one moving down faster)
+            const slappingHandIndex = hand0MovingDown && hand0.y > hand1.y ? 0 : 
+                                     hand1MovingDown && hand1.y > hand0.y ? 1 : -1;
+            
+            if (slappingHandIndex !== -1) {
+              // Replace the detected sign with "Stop" for the slapping hand
+              detectedSigns[slappingHandIndex] = "Stop";
+              // Reset states after detecting Stop
+              gestureStatesRef.current[slappingHandIndex] = "none";
+            }
+          }
         }
       }
-
-      return true;
-    };
-
-    if (!validateLandmarks(landmarks)) {
-      return ''; // Invalid landmarks, don't detect anything
-    }
-
-    // Helper function to calculate distance between two points
-    const calculateDistance = (p1: mpHands.Landmark, p2: mpHands.Landmark): number => {
-      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-    };
-
-    // Helper function to check if finger is extended
-    const isFingerExtended = (finger: number[]): boolean => {
-      const tip = landmarks[finger[3]];
-      const pip = landmarks[finger[2]];
-      const mcp = landmarks[finger[0]];
       
-      // More strict criteria for finger extension
-      const tipAbovePip = tip.y < pip.y - 0.03;
-      const tipAboveMcp = tip.y < mcp.y - 0.01;
-      
-      return tipAbovePip && tipAboveMcp;
-    };
-
-    // Helper function to check if finger is curled
-    const isFingerCurled = (finger: number[]): boolean => {
-      const tip = landmarks[finger[3]];
-      const pip = landmarks[finger[2]];
-      return tip.y > pip.y + 0.01;
-    };
-
-    // Finger landmark indices
-    const fingers = {
-      thumb: [1, 2, 3, 4],
-      index: [5, 6, 7, 8],
-      middle: [9, 10, 11, 12],
-      ring: [13, 14, 15, 16],
-      pinky: [17, 18, 19, 20]
-    };
-
-    // Detect basic signs based on finger positions
-    const thumbExtended = isFingerExtended(fingers.thumb);
-    const indexExtended = isFingerExtended(fingers.index);
-    const middleExtended = isFingerExtended(fingers.middle);
-    const ringExtended = isFingerExtended(fingers.ring);
-    const pinkyExtended = isFingerExtended(fingers.pinky);
-
-    // Count extended fingers
-    const extendedCount = [thumbExtended, indexExtended, middleExtended, ringExtended, pinkyExtended]
-      .filter(Boolean).length;
-
-    // Count curled fingers
-    const curledCount = [
-      isFingerCurled(fingers.thumb),
-      isFingerCurled(fingers.index),
-      isFingerCurled(fingers.middle),
-      isFingerCurled(fingers.ring),
-      isFingerCurled(fingers.pinky)
-    ].filter(Boolean).length;
-
-    // Basic ASL Handshapes and Gestures
-    // HELLO - Open palm facing forward (all fingers extended)
-    if (extendedCount === 5 && curledCount === 0) {
-      const fingerSpread = Math.max(...[4, 8, 12, 16, 20].map(i => landmarks[i].x)) - 
-                           Math.min(...[4, 8, 12, 16, 20].map(i => landmarks[i].x));
-      if (fingerSpread < 0.35) {
-        return 'HELLO';
-      }
+      updateGestureOutput(detectedSigns);
+    } else {
+      // No hand detected, reset all states
+      gestureStatesRef.current = {};
+      lastHandYRef.current = {};
+      lastHandXRef.current = {};
+      stateTimersRef.current = {};
+      handPositionsRef.current = {};
+      updateGestureOutput([]);
     }
-
-    // YES - Fist (all fingers curled)
-    if (extendedCount === 0 && curledCount >= 4) {
-      return 'YES';
-    }
-
-    // NO - Index + middle extended, others curled
-    if (!thumbExtended && indexExtended && middleExtended && !ringExtended && !pinkyExtended && curledCount >= 2) {
-      return 'NO';
-    }
-
-    // OK - Thumb and index touching (circle)
-    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && !pinkyExtended && curledCount >= 2) {
-      const thumbTip = landmarks[4];
-      const indexTip = landmarks[8];
-      const thumbIndexDistance = calculateDistance(thumbTip, indexTip);
-      if (thumbIndexDistance < 0.06 && thumbIndexDistance > 0.02) {
-        return 'OK';
-      }
-    }
-
-    // I LOVE YOU - Thumb, index, pinky extended
-    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && pinkyExtended) {
-      return 'I LOVE YOU';
-    }
-
-    // Letter L - Thumb + index extended, others curled
-    if (thumbExtended && indexExtended && !middleExtended && !ringExtended && !pinkyExtended && curledCount >= 2) {
-      return 'L';
-    }
-
-    // Letter I - Only pinky extended
-    if (!thumbExtended && !indexExtended && !middleExtended && !ringExtended && pinkyExtended) {
-      return 'I';
-    }
-
-    // Letter B - All four fingers extended, thumb curled across palm
-    if (!thumbExtended && indexExtended && middleExtended && ringExtended && pinkyExtended) {
-      return 'B';
-    }
-
-    // Letter A - Fist (thumb across the side) — approximate as all curled
-    if (extendedCount === 0 && curledCount >= 4) {
-      return 'A';
-    }
-
-    // No clear sign detected - return empty string instead of random sign
-    // This prevents false positive detections and random shuffling
-    return '';
+    
+    ctx.restore();
   };
 
-  // Bridge to reuse heuristics with OpenPose results
-  const detectSignFromOpenPose = (hand: OpenPoseHandResult): string => {
-    const lm = hand.keypoints;
-    if (!lm || lm.length < 21) return '';
-    const mpLike: mpHands.Landmark[] = lm.map((p) => ({ x: p.x, y: p.y, z: 0 } as mpHands.Landmark));
-    return detectSignFromLandmarks(mpLike, hand.handedness || 'Right');
+  // Update gesture output display
+  const updateGestureOutput = (signs: string[]) => {
+    let outputText = "";
+    let mainSign = "none";
+    
+    if (signs.length === 0) {
+      outputText = "... Awaiting Sign ...";
+      mainSign = "awaiting";
+    } else if (signs.length === 1) {
+      outputText = signs[0];
+      mainSign = signs[0];
+    } else {
+      // Both hands detected
+      outputText = `Hand 1: ${signs[0]} | Hand 2: ${signs[1]}`;
+      // Prioritize dynamic gestures or "success" signs for color
+      if (signs.includes("Good Morning (ISL)") || signs.includes("I Love You (ILY)") || signs.includes("Stop")) {
+        mainSign = signs.includes("Stop") ? "Stop" : "Good Morning (ISL)";
+      } else if (signs[0].includes("moving...") || signs[1].includes("moving...") || signs[0].includes("slapping...") || signs[1].includes("slapping...")) {
+        mainSign = "moving...";
+      } else {
+        mainSign = signs[0];
+      }
+    }
+    
+    setDetectedSign(outputText);
+    
+    // Show "Hand Tracking Active" indicator when hand is detected
+    if (signs.length > 0 && !showHandTrackingActive) {
+      setShowHandTrackingActive(true);
+      // Hide after 5 seconds
+      setTimeout(() => {
+        setShowHandTrackingActive(false);
+      }, 5000);
+    }
+    
+    if (outputText && outputText !== "... Awaiting Sign ...") {
+      setDetectionHistory((prev: string[]) => [outputText, ...prev].slice(0, 10));
+      
+      if (audioEnabled && !mainSign.includes("moving...") && !mainSign.includes("slapping...") && mainSign !== "awaiting") {
+        const utterance = new SpeechSynthesisUtterance(outputText);
+        utterance.rate = 0.9;
+        speechSynthesis.speak(utterance);
+      }
+    }
   };
 
-  // Demo mode animation
-  useEffect(() => {
-    if (demoMode && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+  // Load MediaPipe Tasks Vision dynamically via script tag
+  const loadMediaPipe = async (): Promise<{ HandLandmarker: any; FilesetResolver: any }> => {
+    if ((window as any).mediapipe?.tasks?.vision) {
+      return (window as any).mediapipe.tasks.vision;
+    }
 
-      let frame = 0;
-      const animate = () => {
-        // Create animated gradient background
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, `hsl(${frame % 360}, 70%, 60%)`);
-        gradient.addColorStop(1, `hsl(${(frame + 60) % 360}, 70%, 40%)`);
+    return new Promise((resolve, reject) => {
+      // Check if script already exists
+      const existingScript = document.querySelector('script[data-mediapipe]');
+      if (existingScript) {
+        // Wait for it to load
+        const checkInterval = setInterval(() => {
+          if ((window as any).mediapipe?.tasks?.vision) {
+            clearInterval(checkInterval);
+            resolve((window as any).mediapipe.tasks.vision);
+          }
+        }, 100);
         
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw demo text
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.font = 'bold 48px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('DEMO MODE', canvas.width / 2, canvas.height / 2);
-        
-        // Draw animated hand silhouette
-        const handY = canvas.height / 2 + 60 + Math.sin(frame * 0.05) * 20;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.font = '80px Arial';
-        ctx.fillText('👋', canvas.width / 2, handY);
-        
-        frame++;
-        if (demoMode) {
-          requestAnimationFrame(animate);
-        }
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          if (!(window as any).mediapipe?.tasks?.vision) {
+            reject(new Error('MediaPipe failed to load'));
+          }
+        }, 10000);
+        return;
+      }
+
+      // Create and inject script tag
+      const script = document.createElement('script');
+      script.type = 'module';
+      script.setAttribute('data-mediapipe', 'true');
+      script.textContent = `
+        import { HandLandmarker, FilesetResolver } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest';
+        window.mediapipe = { tasks: { vision: { HandLandmarker, FilesetResolver } } };
+        window.dispatchEvent(new Event('mediapipe-loaded'));
+      `;
+      
+      script.onerror = () => {
+        reject(new Error('Failed to load MediaPipe script'));
       };
       
-      animate();
+      window.addEventListener('mediapipe-loaded', () => {
+        resolve((window as any).mediapipe.tasks.vision);
+      }, { once: true });
+      
+      document.head.appendChild(script);
+    });
+  };
+
+  // Initialize MediaPipe HandLandmarker
+  const createHandLandmarker = async () => {
+    try {
+      console.log("Loading MediaPipe Tasks Vision...");
+      const { HandLandmarker, FilesetResolver } = await loadMediaPipe();
+      
+      console.log("Initializing FilesetResolver...");
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+      );
+      
+      console.log("Creating HandLandmarker...");
+      const handLandmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numHands: 2
+      });
+      
+      handLandmarkerRef.current = handLandmarker;
+      console.log("MediaPipe HandLandmarker initialized for 2 hands.");
+      
+      setIsProcessing(false);
+      return true;
+    } catch (error: any) {
+      console.error("Initialization error:", error);
+      setCameraError('UNKNOWN');
+      setIsProcessing(false);
+      return false;
     }
-  }, [demoMode]);
+  };
+
+  // Main prediction loop
+  const predictWebcam = () => {
+    const handLandmarker = handLandmarkerRef.current;
+    const video = videoRef.current;
+    
+    if (!cameraActive || !handLandmarker || !video) {
+      return;
+    }
+    
+    if (video.readyState !== 4) {
+      animationFrameRef.current = requestAnimationFrame(predictWebcam);
+      return;
+    }
+    
+    const nowInMs = performance.now();
+    
+    if (video.currentTime !== lastVideoTimeRef.current) {
+      lastVideoTimeRef.current = video.currentTime;
+      try {
+        const results = handLandmarker.detectForVideo(video, nowInMs);
+        drawResults(results);
+      } catch (error) {
+        console.error("Error in detection:", error);
+      }
+    }
+    
+    animationFrameRef.current = requestAnimationFrame(predictWebcam);
+  };
+
+  // Real-time hand detection from camera using MediaPipe Tasks Vision
+  useEffect(() => {
+    if (!cameraActive || !videoRef.current || !outputCanvasRef.current) {
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = outputCanvasRef.current;
+
+    const initializeAndStart = async () => {
+      setIsProcessing(true);
+      
+      // Wait for video to be ready
+      const waitForVideo = () => {
+        return new Promise<void>((resolve) => {
+          if (video.readyState >= 2) {
+            resolve();
+          } else {
+            const onLoadedData = () => {
+              video.removeEventListener('loadeddata', onLoadedData);
+              resolve();
+            };
+            video.addEventListener('loadeddata', onLoadedData);
+          }
+        });
+      };
+
+      await waitForVideo();
+
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+
+      // Initialize MediaPipe
+      const success = await createHandLandmarker();
+      
+      if (success && handLandmarkerRef.current) {
+        console.log("Starting prediction loop...");
+        predictWebcam();
+      }
+    };
+
+    initializeAndStart();
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      gestureStatesRef.current = {};
+      lastHandYRef.current = {};
+      stateTimersRef.current = {};
+      lastVideoTimeRef.current = -1;
+    };
+  }, [cameraActive]);
+
 
   const startCamera = async () => {
     setCameraError('');
     setIsLoading(true);
-    setIsProcessing(true);
     
     try {
+      console.log("Starting camera...");
+      
       // Check if getUserMedia is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('UNSUPPORTED');
       }
 
-      // Request camera access with optimized constraints for performance
+      // Request camera access
+      console.log("Requesting camera access...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           width: { ideal: 640 },
@@ -389,37 +586,98 @@ export default function InterpreterPage() {
         } 
       });
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
+      console.log("Camera stream obtained:", stream);
+      console.log("Video tracks:", stream.getVideoTracks());
       
+      // Set camera active first so video element renders
       setCameraActive(true);
       setIsLoading(false);
       
-      // Keep processing state for a moment while MediaPipe initializes
-      setTimeout(() => setIsProcessing(false), 2000);
+      // Wait a bit for React to render the video element
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      if (!videoRef.current) {
+        console.error("Video ref is still null after waiting!");
+        stream.getTracks().forEach(track => track.stop());
+        throw new Error('Video element not available after render');
+      }
+      
+      const video = videoRef.current;
+      console.log("Setting video srcObject...");
+      console.log("Video element:", video);
+      console.log("Video readyState before:", video.readyState);
+      
+      video.srcObject = stream;
+      
+      // Wait for video to be ready
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Video timeout - video did not become ready'));
+        }, 5000);
+        
+        const onCanPlay = () => {
+          clearTimeout(timeout);
+          video.removeEventListener('canplay', onCanPlay);
+          console.log("Video can play, readyState:", video.readyState);
+          resolve();
+        };
+        
+        const onError = (e: Event) => {
+          clearTimeout(timeout);
+          video.removeEventListener('error', onError);
+          console.error("Video error event:", e);
+          reject(new Error('Video element error'));
+        };
+        
+        video.addEventListener('canplay', onCanPlay);
+        video.addEventListener('error', onError);
+        
+        // Try to play
+        video.play().then(() => {
+          console.log("Video play() succeeded");
+        }).catch((playError) => {
+          console.error("Video play() error:", playError);
+          // Don't reject - video might still work
+        });
+        
+        // If already ready, resolve immediately
+        if (video.readyState >= 2) {
+          clearTimeout(timeout);
+          video.removeEventListener('canplay', onCanPlay);
+          video.removeEventListener('error', onError);
+          resolve();
+        }
+      });
+      
+      // Set processing after a short delay to allow video to start
+      setIsProcessing(true);
+      setTimeout(() => {
+        // MediaPipe will set this to false when ready
+      }, 500);
       
     } catch (error: any) {
+      console.error("Camera start error:", error);
+      console.error("Error name:", error?.name);
+      console.error("Error message:", error?.message);
+      console.error("Error stack:", error?.stack);
+      
       setIsLoading(false);
       setIsProcessing(false);
+      setCameraActive(false);
       
       // Handle specific error types
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         setCameraError('PERMISSION_DENIED');
-        // Don't log - this is expected when user denies permission
       } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
         setCameraError('NO_CAMERA');
-        // Don't log - this is expected when no camera is available
       } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
         setCameraError('CAMERA_IN_USE');
-        // Don't log - this is expected when camera is already in use
       } else if (error.message === 'UNSUPPORTED') {
         setCameraError('UNSUPPORTED');
-        // Don't log - this is expected for unsupported browsers
       } else {
-        // Only log truly unexpected errors
         console.warn('Unexpected camera error:', error);
+        // Store error details for debugging
+        (window as any).lastCameraError = error;
         setCameraError('UNKNOWN');
       }
     }
@@ -564,9 +822,6 @@ export default function InterpreterPage() {
             >
               {/* Video Container */}
               <div className={`relative bg-gray-900 ${isFullscreen ? 'h-screen' : 'h-[600px]'}`}>
-                {/* Hidden canvas for processing */}
-                <canvas ref={canvasRef} className="hidden" />
-                
                 {cameraActive ? (
                   <>
                     <video
@@ -575,6 +830,26 @@ export default function InterpreterPage() {
                       playsInline
                       muted
                       className="w-full h-full object-cover"
+                      style={{ transform: 'scaleX(-1)' }}
+                      onLoadedMetadata={() => {
+                        console.log("Video metadata loaded:", {
+                          width: videoRef.current?.videoWidth,
+                          height: videoRef.current?.videoHeight,
+                          readyState: videoRef.current?.readyState
+                        });
+                      }}
+                      onLoadedData={() => {
+                        console.log("Video data loaded");
+                      }}
+                      onCanPlay={() => {
+                        console.log("Video can play");
+                      }}
+                    />
+                    {/* Canvas overlay for hand landmarks */}
+                    <canvas
+                      ref={outputCanvasRef}
+                      className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                      style={{ transform: 'scaleX(-1)' }}
                     />
                     
                     {/* Processing Indicator */}
@@ -603,15 +878,12 @@ export default function InterpreterPage() {
                     </AnimatePresence>
 
                     {/* Hand Detection Status Indicator */}
-                    {detectedSign && (
+                    {showHandTrackingActive && (
                       <motion.div
-                        animate={{
-                          opacity: [0.7, 1, 0.7],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                        }}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.3 }}
                         className="absolute top-4 right-4 bg-green-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm"
                       >
                         ✋ Hand Tracking Active
@@ -642,12 +914,9 @@ export default function InterpreterPage() {
                   </>
                 ) : demoMode ? (
                   <>
-                    <canvas
-                      ref={canvasRef}
-                      width={1280}
-                      height={720}
-                      className="w-full h-full object-cover"
-                    />
+                    <div className="w-full h-full flex items-center justify-center text-white text-2xl">
+                      Demo Mode - Please start camera for detection
+                    </div>
                     
                     {/* Detection Overlay - Only show when hand is actually detected */}
                     <AnimatePresence>
@@ -810,9 +1079,16 @@ export default function InterpreterPage() {
                                 <AlertCircle className="w-10 h-10 text-white" />
                               </div>
                               <h3 className="text-xl mb-3 text-white">Camera Error</h3>
-                              <p className="text-gray-300 mb-6">
+                              <p className="text-gray-300 mb-4">
                                 An unexpected error occurred while accessing the camera. Please try again or refresh the page.
                               </p>
+                              {(window as any).lastCameraError && (
+                                <div className="mb-4 p-3 bg-gray-800/50 rounded-lg text-xs text-gray-400 font-mono">
+                                  <div className="mb-1">Error details (check console for more):</div>
+                                  <div>Name: {(window as any).lastCameraError?.name || 'Unknown'}</div>
+                                  <div>Message: {(window as any).lastCameraError?.message || 'No message'}</div>
+                                </div>
+                              )}
                               <div className="flex gap-3 justify-center">
                                 <button
                                   onClick={startCamera}
@@ -861,21 +1137,6 @@ export default function InterpreterPage() {
                               Demo Mode
                             </button>
                           </div>
-                          <div className="flex items-center justify-center gap-2 mt-4">
-                            <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white">
-                              <input
-                                type="checkbox"
-                                checked={useOpenPose}
-                                onChange={(e) => setUseOpenPose(e.target.checked)}
-                              />
-                              Use OpenPose backend
-                            </label>
-                          </div>
-                          {useOpenPose && !getOpenPoseConfig() && (
-                            <p className="text-center text-xs mt-2 text-red-600 dark:text-red-400">
-                              OpenPose backend not configured. Set `VITE_OPENPOSE_ENDPOINT` in `.env.local`.
-                            </p>
-                          )}
                         </>
                       )}
                     </div>

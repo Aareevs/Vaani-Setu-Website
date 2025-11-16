@@ -1,4 +1,5 @@
-import { ArrowRight, ChevronDown, HelpCircle, Sparkles, Zap, Users } from 'lucide-react';
+import React from 'react';
+import { ArrowRight, HelpCircle, Zap, Users, Star, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import PublicNav from './PublicNav';
 import Footer from './Footer';
@@ -9,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from './ui/accordion';
+import EmojiPicker from './EmojiPicker';
 
 interface LandingPageProps {
   onNavigate: (page: any) => void;
@@ -17,6 +19,16 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMode }: LandingPageProps) {
+  const [showReviewModal, setShowReviewModal] = React.useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = React.useState(false);
+  const [reviewForm, setReviewForm] = React.useState({
+    name: '',
+    rating: 5,
+    review: '',
+    avatar: '👤'
+  });
+  const [hoverRating, setHoverRating] = React.useState(0);
+
   const scrollToAbout = () => {
     const aboutSection = document.getElementById('about-section');
     aboutSection?.scrollIntoView({ behavior: 'smooth' });
@@ -114,7 +126,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
         {/* Content */}
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto py-20">
           {/* Glass morphism background for content */}
-          <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/10 backdrop-blur-md rounded-3xl -z-10" />
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-800 to-violet-900 backdrop-blur-md rounded-3xl -z-10" />
           {/* Logo */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -250,20 +262,24 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             <motion.div
               animate={{ y: [0, 10, 0] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-              className="flex flex-col items-center gap-3 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+              className="flex flex-col items-center gap-3 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors group"
             >
               <span className="text-sm font-medium">Discover More</span>
-              <motion.div
-                animate={{ y: [0, 5, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="w-6 h-10 border-2 border-gray-400 dark:border-gray-500 rounded-full flex justify-center group-hover:border-blue-500 dark:group-hover:border-blue-400 transition-colors"
-              >
+              <div className="relative">
+                <div className="absolute inset-0 bg-purple-500/30 dark:bg-purple-400/40 rounded-full blur-md group-hover:bg-purple-600/40 dark:group-hover:bg-purple-300/50 transition-all" />
+                <div className="absolute inset-0 border border-purple-400/30 dark:border-purple-300/40 rounded-full group-hover:border-purple-600/40 dark:group-hover:border-purple-200/50 transition-all" />
                 <motion.div
-                  animate={{ y: [0, 12, 0] }}
+                  animate={{ y: [0, 5, 0] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="w-1 h-3 bg-gray-400 dark:bg-gray-500 rounded-full mt-2 group-hover:bg-blue-500 dark:group-hover:bg-blue-400 transition-colors"
-                />
-              </motion.div>
+                  className="w-6 h-10 border-2 border-purple-600 dark:border-purple-300 rounded-full flex justify-center group-hover:border-purple-800 dark:group-hover:border-purple-200 transition-colors shadow-sm relative bg-gray-100 dark:bg-gray-700/50"
+                >
+                  <motion.div
+                    animate={{ y: [0, 12, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-1 h-3 bg-purple-600 dark:bg-purple-300 rounded-full mt-2 group-hover:bg-purple-800 dark:group-hover:bg-purple-200 transition-colors shadow-sm"
+                  />
+                </motion.div>
+              </div>
             </motion.div>
           </motion.button>
         </div>
@@ -516,6 +532,200 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
         </div>
       </div>
 
+      {/* User Testimonials Section */}
+      <div className="py-24 px-4 bg-white dark:bg-gray-800">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl mb-6 bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+              What Our Users Say
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Join thousands of users who are breaking communication barriers with Vaani Setu
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {/* Testimonial 1 */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-700 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-2xl">
+                  👩‍🎓
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Meera Singh</h4>
+                  <div className="flex text-yellow-500">
+                    {'★'.repeat(5)}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                "Vaani Setu has been a game-changer for me! As a teacher with hearing-impaired students, this platform has made communication so much easier. The AI detection is incredibly accurate."
+              </p>
+              <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>Oct 28, 2024</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-blue-600 dark:text-blue-400">👍</span>
+                  24 found helpful
+                </span>
+              </div>
+            </div>
+
+            {/* Testimonial 2 */}
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-6 rounded-2xl border border-purple-200 dark:border-purple-700 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-2xl">
+                  👨‍💻
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Karan Mehta</h4>
+                  <div className="flex text-yellow-500">
+                    {'★'.repeat(5)}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                "The interface is intuitive and the tutorials are very well structured. I learned basic ASL in just 2 weeks. Highly recommend for anyone wanting to learn sign language!"
+              </p>
+              <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>Oct 25, 2024</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-purple-600 dark:text-purple-400">👍</span>
+                  18 found helpful
+                </span>
+              </div>
+            </div>
+
+            {/* Testimonial 3 */}
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-6 rounded-2xl border border-green-200 dark:border-green-700 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-2xl">
+                  👩‍⚕️
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Sanya Kapoor</h4>
+                  <div className="flex text-yellow-500">
+                    {'★'.repeat(5)}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                "Great platform overall. The real-time translation is impressive. Would love to see more regional sign variations added. Still, an excellent tool for bridging communication gaps."
+              </p>
+              <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>Oct 22, 2024</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-green-600 dark:text-green-400">👍</span>
+                  15 found helpful
+                </span>
+              </div>
+            </div>
+
+            {/* Testimonial 4 */}
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 p-6 rounded-2xl border border-orange-200 dark:border-orange-700 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-2xl">
+                  🧑‍🔧
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Vikram Reddy</h4>
+                  <div className="flex text-yellow-500">
+                    {'★'.repeat(5)}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                "As someone who works with the deaf community, I can say this is one of the best AI-powered sign language tools out there. The accuracy and speed are remarkable!"
+              </p>
+              <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>Oct 20, 2024</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-orange-600 dark:text-orange-400">👍</span>
+                  31 found helpful
+                </span>
+              </div>
+            </div>
+
+            {/* Testimonial 5 */}
+            <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 p-6 rounded-2xl border border-pink-200 dark:border-pink-700 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center text-2xl">
+                  👩‍🎨
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Anjali Verma</h4>
+                  <div className="flex text-yellow-500">
+                    {'★'.repeat(5)}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                "My daughter is deaf and Vaani Setu has helped our entire family learn ASL together. The community support is amazing. Thank you for creating such an inclusive platform!"
+              </p>
+              <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>Oct 18, 2024</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-pink-600 dark:text-pink-400">👍</span>
+                  42 found helpful
+                </span>
+              </div>
+            </div>
+
+            {/* Testimonial 6 */}
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl">
+                  👨‍🏫
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Rohit Sharma</h4>
+                  <div className="flex text-yellow-500">
+                    {'★'.repeat(5)}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                "Very useful for my work as a special education teacher. The camera detection works well in most lighting conditions. A few minor bugs here and there, but overall fantastic!"
+              </p>
+              <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>Oct 15, 2024</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-indigo-600 dark:text-indigo-400">👍</span>
+                  12 found helpful
+                </span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* CTA Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            viewport={{ once: true }}
+            className="text-center mt-16"
+          >
+            <button
+              onClick={() => setShowReviewModal(true)}
+              className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105"
+            >
+              Write a Review
+            </button>
+          </motion.div>
+        </div>
+      </div>
+
       {/* FAQ Section */}
       <div className="py-24 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto">
@@ -639,6 +849,135 @@ Currently, Vaani Setu supports American Sign Language (ASL) with plans to expand
 
       {/* Footer */}
       <Footer onNavigate={onNavigate} darkMode={darkMode} />
+
+      {/* Review Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Write a Review</h3>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Avatar Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Choose Avatar
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="text-4xl">{reviewForm.avatar}</div>
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Choose Emoji
+                  </button>
+                </div>
+                {showEmojiPicker && (
+                  <div className="mt-3">
+                    <EmojiPicker
+                      onEmojiSelect={(emoji) => {
+                        setReviewForm({...reviewForm, avatar: emoji});
+                        setShowEmojiPicker(false);
+                      }}
+                      onClose={() => setShowEmojiPicker(false)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Name Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  value={reviewForm.name}
+                  onChange={(e) => setReviewForm({...reviewForm, name: e.target.value})}
+                  placeholder="Enter your name"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              {/* Rating */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Rating
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setReviewForm({...reviewForm, rating: star})}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="text-3xl transition-colors"
+                    >
+                      <Star
+                        className={`w-8 h-8 ${
+                          star <= (hoverRating || reviewForm.rating)
+                            ? 'text-yellow-500 fill-yellow-500'
+                            : 'text-gray-300 dark:text-gray-600'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Review Text */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Your Review
+                </label>
+                <textarea
+                  value={reviewForm.review}
+                  onChange={(e) => setReviewForm({...reviewForm, review: e.target.value})}
+                  placeholder="Share your experience with Vaani Setu..."
+                  rows={4}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // Here you would typically submit the review to your backend
+                    alert('Thank you for your review! It will be reviewed and posted soon.');
+                    setShowReviewModal(false);
+                    // Reset form
+                    setReviewForm({ name: '', rating: 5, review: '', avatar: '👤' });
+                  }}
+                  disabled={!reviewForm.name || !reviewForm.review}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                >
+                  Submit Review
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

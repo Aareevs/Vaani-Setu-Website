@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, ThumbsUp, MessageCircle, Plus, Star, X, Send, AlertCircle, Filter, TrendingUp as TrendingIcon } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Search, ThumbsUp, MessageCircle, Plus, X, Send, AlertCircle, Filter, TrendingUp as TrendingIcon, Image, Paperclip, Sparkles, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { containsProfanity, getProfanityWarningMessage } from '../utils/profanityFilter';
 
@@ -41,12 +41,14 @@ export default function CommunityPage() {
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
   const [likedComments, setLikedComments] = useState<number[]>([]);
   const [likedReplies, setLikedReplies] = useState<number[]>([]);
-  const [likedTestimonials, setLikedTestimonials] = useState<number[]>([]);
+  // const [, setLikedTestimonials] = useState<number[]>([]);
   const [selectedPost, setSelectedPost] = useState<number | null>(null);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [profanityError, setProfanityError] = useState<string | null>(null);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Filtering and sorting states
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -181,62 +183,63 @@ export default function CommunityPage() {
     ],
   });
 
-  const userTestimonials = [
-    {
-      id: 1,
-      name: 'Meera Singh',
-      avatar: '👩‍🎓',
-      rating: 5,
-      date: 'Oct 28, 2024',
-      review: 'Vaani Setu has been a game-changer for me! As a teacher with hearing-impaired students, this platform has made communication so much easier. The AI detection is incredibly accurate.',
-      helpful: 24,
-    },
-    {
-      id: 2,
-      name: 'Karan Mehta',
-      avatar: '👨‍💻',
-      rating: 5,
-      date: 'Oct 25, 2024',
-  review: 'The interface is intuitive and the tutorials are very well structured. I learned basic ASL in just 2 weeks. Highly recommend for anyone wanting to learn sign language!',
-      helpful: 18,
-    },
-    {
-      id: 3,
-      name: 'Sanya Kapoor',
-      avatar: '👩‍⚕️',
-      rating: 5,
-      date: 'Oct 22, 2024',
-      review: 'Great platform overall. The real-time translation is impressive. Would love to see more regional sign variations added. Still, an excellent tool for bridging communication gaps.',
-      helpful: 15,
-    },
-    {
-      id: 4,
-      name: 'Vikram Reddy',
-      avatar: '🧑‍🔧',
-      rating: 5,
-      date: 'Oct 20, 2024',
-      review: 'As someone who works with the deaf community, I can say this is one of the best AI-powered sign language tools out there. The accuracy and speed are remarkable!',
-      helpful: 31,
-    },
-    {
-      id: 5,
-      name: 'Anjali Verma',
-      avatar: '👩‍🎨',
-      rating: 5,
-      date: 'Oct 18, 2024',
-  review: 'My daughter is deaf and Vaani Setu has helped our entire family learn ASL together. The community support is amazing. Thank you for creating such an inclusive platform!',
-      helpful: 42,
-    },
-    {
-      id: 6,
-      name: 'Rohit Sharma',
-      avatar: '👨‍🏫',
-      rating: 5,
-      date: 'Oct 15, 2024',
-      review: 'Very useful for my work as a special education teacher. The camera detection works well in most lighting conditions. A few minor bugs here and there, but overall fantastic!',
-      helpful: 12,
-    },
-  ];
+  // User testimonials data (commented out as not currently used)
+  // const userTestimonials = [
+  //   {
+  //     id: 1,
+  //     name: 'Meera Singh',
+  //     avatar: '👩‍🎓',
+  //     rating: 5,
+  //     date: 'Oct 28, 2024',
+  //     review: 'Vaani Setu has been a game-changer for me! As a teacher with hearing-impaired students, this platform has made communication so much easier. The AI detection is incredibly accurate.',
+  //     helpful: 24,
+  //   },
+  //   {
+  //     id: 2,
+  //     name: 'Karan Mehta',
+  //     avatar: '👨‍💻',
+  //     rating: 5,
+  //     date: 'Oct 25, 2024',
+  //     review: 'The interface is intuitive and the tutorials are very well structured. I learned basic ASL in just 2 weeks. Highly recommend for anyone wanting to learn sign language!',
+  //     helpful: 18,
+  //   },
+  //   {
+  //     id: 3,
+  //     name: 'Sanya Kapoor',
+  //     avatar: '👩‍⚕️',
+  //     rating: 5,
+  //     date: 'Oct 22, 2024',
+  //     review: 'Great platform overall. The real-time translation is impressive. Would love to see more regional sign variations added. Still, an excellent tool for bridging communication gaps.',
+  //     helpful: 15,
+  //   },
+  //   {
+  //     id: 4,
+  //     name: 'Vikram Reddy',
+  //     avatar: '🧑‍🔧',
+  //     rating: 5,
+  //     date: 'Oct 20, 2024',
+  //     review: 'As someone who works with the deaf community, I can say this is one of the best AI-powered sign language tools out there. The accuracy and speed are remarkable!',
+  //     helpful: 31,
+  //   },
+  //   {
+  //     id: 5,
+  //     name: 'Anjali Verma',
+  //     avatar: '👩‍🎨',
+  //     rating: 5,
+  //     date: 'Oct 18, 2024',
+  //     review: 'My daughter is deaf and Vaani Setu has helped our entire family learn ASL together. The community support is amazing. Thank you for creating such an inclusive platform!',
+  //     helpful: 42,
+  //   },
+  //   {
+  //     id: 6,
+  //     name: 'Rohit Sharma',
+  //     avatar: '👨‍🏫',
+  //     rating: 5,
+  //     date: 'Oct 15, 2024',
+  //     review: 'Very useful for my work as a special education teacher. The camera detection works well in most lighting conditions. A few minor bugs here and there, but overall fantastic!',
+  //     helpful: 12,
+  //   },
+  // ];
 
   const toggleLikePost = (postId: number) => {
     if (likedPosts.includes(postId)) {
@@ -310,16 +313,17 @@ export default function CommunityPage() {
     }
   };
 
-  const toggleLikeTestimonial = (testimonialId: number) => {
-    // This would update the testimonial's helpful count
-    setLikedTestimonials(prev => {
-      if (prev.includes(testimonialId)) {
-        return prev.filter(id => id !== testimonialId);
-      } else {
-        return [...prev, testimonialId];
-      }
-    });
-  };
+  // Commented out unused function
+  // const toggleLikeTestimonial = (testimonialId: number) => {
+  //   // This would update the testimonial's helpful count
+  //   setLikedTestimonials(prev => {
+  //     if (prev.includes(testimonialId)) {
+  //       return prev.filter(id => id !== testimonialId);
+  //     } else {
+  //       return [...prev, testimonialId];
+  //     }
+  //   });
+  // };
 
   const handleAddComment = () => {
     if (!newComment.trim() || !selectedPost) return;
@@ -384,6 +388,60 @@ export default function CommunityPage() {
 
     setReplyText('');
     setReplyingTo(null);
+    setProfanityError(null);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      // Handle file upload logic here
+      console.log('Files selected:', Array.from(files).map(f => f.name));
+      // You can implement actual file upload to server here
+    }
+  };
+
+  const improveWithAI = () => {
+    if (!newComment.trim()) return;
+    
+    // Simulate AI improvement (in a real app, this would call an AI API)
+    const improvedText = newComment
+      .replace(/\b(good|nice|cool)\b/gi, 'excellent')
+      .replace(/\b(bad|terrible)\b/gi, 'needs improvement')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    setNewComment(improvedText);
+    setShowAIAssistant(false);
+  };
+
+  const handlePostComment = () => {
+    if (!newComment.trim()) return;
+
+    // Check for profanity
+    if (containsProfanity(newComment)) {
+      setProfanityError(getProfanityWarningMessage());
+      setTimeout(() => setProfanityError(null), 5000);
+      return;
+    }
+
+    // Create new post from comment
+    const newPost: Post = {
+      id: Date.now(),
+      author: 'You',
+      avatar: '👤',
+      time: 'Just now',
+      title: 'Community Comment',
+      content: newComment,
+      likes: 0,
+      comments: 0,
+      tags: ['community'],
+      createdAt: new Date(),
+      category: 'discussion',
+    };
+
+    setPosts(prev => [newPost, ...prev]);
+    setNewComment('');
+    setShowAIAssistant(false);
     setProfanityError(null);
   };
 
@@ -653,114 +711,112 @@ export default function CommunityPage() {
               )}
             </div>
 
-            {/* User Testimonials Section */}
+            {/* Post a Comment Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mt-8"
             >
-              <div className="flex items-center gap-2 mb-6">
-                <Star className="w-6 h-6 text-yellow-500" />
-                <h2 className="text-2xl text-gray-900 dark:text-white">User Testimonials</h2>
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare className="w-6 h-6 text-blue-500" />
+                <h2 className="text-2xl text-gray-900 dark:text-white">Post a Comment</h2>
               </div>
-
-              {/* Average Rating */}
-              <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="text-center">
-                  <div className="text-5xl mb-2 text-gray-900 dark:text-white">5.0</div>
-                  <div className="flex gap-1 mb-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className="w-5 h-5 fill-yellow-500 text-yellow-500"
-                      />
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Based on {userTestimonials.length} testimonials</p>
-                </div>
-                <div className="flex-1">
-                  {[5, 4, 3, 2, 1].map((rating) => {
-                    const count = userTestimonials.filter((r) => r.rating === rating).length;
-                    const percentage = (count / userTestimonials.length) * 100;
-                    return (
-                      <div key={rating} className="flex items-center gap-2 mb-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400 w-8">{rating}★</span>
-                        <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-yellow-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400 w-8">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Testimonials List */}
-              <div className="space-y-6">
-                {userTestimonials.map((testimonial, index) => (
-                  <motion.div
-                    key={testimonial.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                    className="pb-6 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0"
+              
+              {/* Comment Input */}
+              <div className="space-y-4">
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Share your thoughts, ask questions, or start a discussion..."
+                  className="w-full h-32 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                />
+                
+                {/* File Upload Options */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
                   >
-                    {/* Testimonial Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-xl">
-                          {testimonial.avatar}
-                        </div>
-                        <div>
-                          <h4 className="text-gray-900 dark:text-white">{testimonial.name}</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{testimonial.date}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`w-4 h-4 ${
-                              star <= testimonial.rating
-                                ? 'fill-yellow-500 text-yellow-500'
-                                : 'text-gray-300 dark:text-gray-600'
-                            }`}
-                          />
-                        ))}
-                      </div>
+                    <Image className="w-4 h-4" />
+                    <span className="text-sm">Add Image</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                    <span className="text-sm">Attach File</span>
+                  </button>
+                  
+                  {/* Vaani Chatbot AI Assistant */}
+                  <button
+                    onClick={() => setShowAIAssistant(!showAIAssistant)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-all text-white shadow-md hover:shadow-lg"
+                  >
+                    <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                      <Sparkles className="w-3 h-3 text-blue-500" />
                     </div>
-
-                    {/* Testimonial Content */}
-                    <p className="text-gray-600 dark:text-gray-400 mb-3">{testimonial.review}</p>
-
-                    {/* Testimonial Actions */}
-                    <div className="flex items-center gap-4">
-                      <button 
-                        onClick={() => toggleLikeTestimonial(testimonial.id)}
-                        className={`flex items-center gap-2 text-sm transition-colors ${
-                          likedTestimonials.includes(testimonial.id)
-                            ? 'text-blue-600 dark:text-blue-400'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
-                        }`}
+                    <span className="text-sm font-medium">AI Assistant</span>
+                  </button>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </div>
+                
+                {/* AI Assistant Panel */}
+                {showAIAssistant && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Vaani AI Assistant</span>
+                    </div>
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mb-3">
+                      I can help improve your post for clarity, grammar, and tone. Click 'Improve with AI' to get suggestions.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={improveWithAI}
+                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
                       >
-                        <ThumbsUp className={`w-4 h-4 ${likedTestimonials.includes(testimonial.id) ? 'fill-current' : ''}`} />
-                        <span>Helpful ({testimonial.helpful + (likedTestimonials.includes(testimonial.id) ? 1 : 0)})</span>
+                        Improve with AI
+                      </button>
+                      <button
+                        onClick={() => setShowAIAssistant(false)}
+                        className="px-3 py-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+                      >
+                        Close
                       </button>
                     </div>
                   </motion.div>
-                ))}
+                )}
+                
+                {/* Post Button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={handlePostComment}
+                    disabled={!newComment.trim()}
+                    className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-500 hover:from-blue-700 hover:to-purple-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white rounded-xl transition-all font-medium shadow-lg hover:shadow-xl disabled:shadow-none"
+                  >
+                    Post Comment
+                  </button>
+                </div>
               </div>
-
-              {/* Write a Testimonial Button */}
-              <button className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2">
-                <Star className="w-5 h-5" />
-                Write a Testimonial
-              </button>
             </motion.div>
+
           </div>
 
           {/* Sidebar */}
