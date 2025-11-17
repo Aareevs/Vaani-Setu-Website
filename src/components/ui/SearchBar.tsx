@@ -68,64 +68,87 @@ export function SearchBar({
     }));
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch(query, filters);
+  };
+
   return (
     <div className="w-full">
       <div className="relative">
-        <div className={cn(
-          "flex items-center gap-2 p-3 rounded-xl border transition-all duration-200",
-          darkMode 
-            ? "bg-gray-800 border-gray-600 focus-within:border-blue-500" 
-            : "bg-white border-gray-300 focus-within:border-blue-500",
-          "shadow-sm hover:shadow-md"
-        )}>
-          <Search className="w-5 h-5 text-gray-400" />
-          
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={placeholder}
-            className={cn(
-              "flex-1 bg-transparent outline-none text-sm",
-              darkMode ? "text-white placeholder-gray-400" : "text-gray-900 placeholder-gray-500"
+        <form onSubmit={handleSubmit} className="flex items-center">
+          <div className={cn(
+            "flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 w-full",
+            darkMode 
+              ? "bg-gray-800 border-gray-600 focus-within:border-blue-500" 
+              : "bg-white border-gray-300 focus-within:border-blue-500",
+            "shadow-sm hover:shadow-md"
+          )}>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-md">
+              <Search className="w-4 h-4 text-white" />
+            </div>
+
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={placeholder}
+              className={cn(
+                "flex-1 bg-transparent outline-none text-sm",
+                darkMode ? "text-white placeholder-gray-400" : "text-gray-900 placeholder-gray-500"
+              )}
+              aria-label="Search input"
+            />
+
+            <button
+              type="submit"
+              className={cn(
+                "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                darkMode ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-blue-600 text-white hover:bg-blue-700",
+                "focus:outline-none focus:ring-2 focus:ring-blue-500"
+              )}
+              aria-label="Search"
+            >
+              Search
+            </button>
+
+            {query && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={handleClear}
+                type="button"
+                className={cn(
+                  "p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
+                  "focus:outline-none focus:ring-2 focus:ring-blue-500"
+                )}
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </motion.button>
             )}
-            aria-label="Search input"
-          />
-          
-          {query && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              onClick={handleClear}
-              className={cn(
-                "p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500"
-              )}
-              aria-label="Clear search"
-            >
-              <X className="w-4 h-4 text-gray-500" />
-            </motion.button>
-          )}
-          
-          {showFilters && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowFilterPanel(!showFilterPanel)}
-              className={cn(
-                "p-2 rounded-lg transition-colors",
-                showFilterPanel
-                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400"
-                  : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500"
-              )}
-              aria-label="Toggle filters"
-              aria-expanded={showFilterPanel}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-            </motion.button>
-          )}
-        </div>
+
+            {showFilters && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowFilterPanel(!showFilterPanel)}
+                type="button"
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  showFilterPanel
+                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400"
+                    : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400",
+                  "focus:outline-none focus:ring-2 focus:ring-blue-500"
+                )}
+                aria-label="Toggle filters"
+                aria-expanded={showFilterPanel}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+              </motion.button>
+            )}
+          </div>
+        </form>
 
         <AnimatePresence>
           {showFilterPanel && showFilters && (

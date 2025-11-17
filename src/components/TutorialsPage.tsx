@@ -764,6 +764,8 @@ export default function TutorialsPage() {
     streak: 7,
   };
 
+  const isDark = document.documentElement.classList.contains('dark');
+
   const handleTutorialClick = (tutorial: Tutorial) => {
     setSelectedTutorial(tutorial);
     setSelectedLesson(null);
@@ -1082,10 +1084,11 @@ export default function TutorialsPage() {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
+          {/** detect current theme **/}
           <SearchBar
             onSearch={search}
             placeholder="Search tutorials by title, description, or what you'll learn..."
-            darkMode={false}
+            darkMode={isDark}
             showFilters={true}
             categories={['beginner', 'daily', 'emergency', 'numbers']}
             difficulties={['Beginner', 'Intermediate', 'Advanced']}
@@ -1097,7 +1100,7 @@ export default function TutorialsPage() {
             total={totalResults}
             filtered={filteredResults}
             query={query}
-            darkMode={false}
+            darkMode={isDark}
           />
         </motion.div>
 

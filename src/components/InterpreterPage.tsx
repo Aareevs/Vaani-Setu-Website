@@ -35,6 +35,8 @@ export default function InterpreterPage() {
   
   // MediaPipe HandLandmarker refs
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
+  const faceLandmarkerRef = useRef<any | null>(null);
+  const poseLandmarkerRef = useRef<any | null>(null);
   const lastVideoTimeRef = useRef<number>(-1);
   const animationFrameRef = useRef<number | null>(null);
   
@@ -44,6 +46,14 @@ export default function InterpreterPage() {
   const stateTimersRef = useRef<Record<number, number>>({});
   const lastHandXRef = useRef<Record<number, number>>({});
   const handPositionsRef = useRef<Record<number, { x: number; y: number; sign: string }>>({});
+  const lastHandZRef = useRef<Record<number, number>>({});
+  const handPathRef = useRef<Record<number, Array<{ x: number; y: number; z: number }>>>({});
+  const motherHoldRef = useRef<Record<number, number>>({});
+  const fatherHoldRef = useRef<Record<number, number>>({});
+  const loveHoldRef = useRef<number>(0);
+  const deafStateRef = useRef<Record<number, { stage: 'none' | 'mouth' | 'ear'; timer: number }>>({});
+  const goodStateRef = useRef<Record<number, { stage: 'none' | 'nearChin'; timer: number }>>({});
+  const recentPhrasesRef = useRef<Array<{ text: string; time: number }>>([]);
   
   // Constants
   const Y_MOVEMENT_THRESHOLD = 0.01;
@@ -156,6 +166,10 @@ export default function InterpreterPage() {
       return "Index Finger Up";
     }
     
+    if (isIndexUp && isMiddleUp && isRingDown && isPinkyDown && !isThumbUp) {
+      return "Two Fingers Up";
+    }
+    
     // Default Fallback
     return "Hand Detected - Unknown Sign";
   };
@@ -163,14 +177,23 @@ export default function InterpreterPage() {
   // Tracks dynamic gestures over time using a state machine (per hand)
   const trackDynamicGestures = (staticSign: string, landmarks: HandLandmark[], handIndex: number): string => {
     const currentHandY = landmarks[0].y; // Wrist Y coordinate
+    const currentHandX = landmarks[0].x;
+    const currentHandZ = landmarks[0].z;
     
     // Initialize state for this hand if it's new
     if (gestureStatesRef.current[handIndex] === undefined) {
       gestureStatesRef.current[handIndex] = "none";
       lastHandYRef.current[handIndex] = 0;
       stateTimersRef.current[handIndex] = 0;
+      lastHandZRef.current[handIndex] = 0;
+      handPathRef.current[handIndex] = [];
     }
     
+    const path = handPathRef.current[handIndex] || [];
+    path.push({ x: currentHandX, y: currentHandY, z: currentHandZ });
+    if (path.length > 24) path.shift();
+    handPathRef.current[handIndex] = path;
+
     switch (gestureStatesRef.current[handIndex]) {
       case "none":
         if (staticSign === "Yes") {
@@ -178,6 +201,52 @@ export default function InterpreterPage() {
           gestureStatesRef.current[handIndex] = "lookingForUpwardMovement";
           lastHandYRef.current[handIndex] = currentHandY;
           stateTimersRef.current[handIndex] = 0;
+        }
+        
+        if (staticSign === "Hello") {
+          if (path.length >= 12) {
+            const cx = path.reduce((a, p) => a + p.x, 0) / path.length;
+            const cy = path.reduce((a, p) => a + p.y, 0) / path.length;
+            let angleSum = 0;
+            for (let i = 1; i < path.length; i++) {
+              const v1x = path[i - 1].x - cx;
+              const v1y = path[i - 1].y - cy;
+              const v2x = path[i].x - cx;
+              const v2y = path[i].y - cy;
+              const dot = v1x * v2x + v1y * v2y;
+              const m1 = Math.sqrt(v1x * v1x + v1y * v1y);
+              const m2 = Math.sqrt(v2x * v2x + v2y * v2y);
+              const cos = Math.max(-1, Math.min(1, dot / (m1 * m2 || 1)));
+              angleSum += Math.acos(cos);
+            }
+            const avgR = path.reduce((a, p) => a + Math.sqrt((p.x - cx) ** 2 + (p.y - cy) ** 2), 0) / path.length;
+            if (angleSum > 4 && avgR > 0.01 && avgR < 0.06) {
+              return "Please";
+            }
+          }
+          if (path.length >= 8) {
+            const zDelta = path[path.length - 1].z - path[0].z;
+            const yDelta = path[path.length - 1].y - path[0].y;
+            if (zDelta < -0.06 && yDelta > 0) {
+              return "Thank You";
+            }
+          }
+        }
+        
+        if (staticSign === "Two Fingers Up") {
+          if (path.length >= 10) {
+            let directionChanges = 0;
+            let prevDx = 0;
+            for (let i = 1; i < path.length; i++) {
+              const dx = path[i].x - path[i - 1].x;
+              if (prevDx !== 0 && dx !== 0 && Math.sign(dx) !== Math.sign(prevDx)) directionChanges++;
+              prevDx = dx;
+            }
+            const amp = Math.max(...path.map(p => p.x)) - Math.min(...path.map(p => p.x));
+            if (directionChanges >= 3 && amp > 0.04) {
+              return "Bathroom";
+            }
+          }
         }
         // Note: Stop gesture is now handled in drawResults for two-hand detection
         return staticSign;
@@ -221,7 +290,7 @@ export default function InterpreterPage() {
   };
 
   // Draw landmarks and connections on canvas
-  const drawResults = (results: HandLandmarkerResult) => {
+  const drawResults = (results: HandLandmarkerResult, faceResults?: any, poseResults?: any) => {
     const canvas = outputCanvasRef.current;
     if (!canvas) return;
     
@@ -332,6 +401,165 @@ export default function InterpreterPage() {
             }
           }
         }
+
+        const index0 = results.landmarks[0][8];
+        const index1 = results.landmarks[1][8];
+        const distIndex = Math.sqrt(
+          Math.pow((index0.x - index1.x) * canvas.width, 2) +
+          Math.pow((index0.y - index1.y) * canvas.height, 2)
+        );
+        if (hand0.sign === "Index Finger Up" && hand1.sign === "Index Finger Up" && distIndex < 120) {
+          detectedSigns[0] = "Friend";
+          detectedSigns[1] = "Friend";
+        }
+
+        const hand0PrevX = lastHandXRef.current[0] !== undefined ? lastHandXRef.current[0] : hand0.x;
+        const hand1PrevX = lastHandXRef.current[1] !== undefined ? lastHandXRef.current[1] : hand1.x;
+        const v0x = hand0.x - hand0PrevX;
+        const v1x = hand1.x - hand1PrevX;
+        if (hand0.sign === "Closed Fist" && hand1.sign === "Closed Fist" && Math.sign(v0x) !== Math.sign(v1x) && Math.abs(v0x) > 0.02 && Math.abs(v1x) > 0.02) {
+          detectedSigns[0] = "Baby";
+          detectedSigns[1] = "Baby";
+        }
+
+        const hand0PrevY2 = lastHandYRef.current[0] !== undefined ? lastHandYRef.current[0] : hand0.y;
+        const hand1PrevY2 = lastHandYRef.current[1] !== undefined ? lastHandYRef.current[1] : hand1.y;
+        const v0y = hand0.y - hand0PrevY2;
+        const v1y = hand1.y - hand1PrevY2;
+        const handsCloseForSchool = Math.sqrt(
+          Math.pow((hand0.x - hand1.x) * canvas.width, 2) +
+          Math.pow((hand0.y - hand1.y) * canvas.height, 2)
+        ) < 180;
+        if ((hand0.sign === "Hello" || hand1.sign === "Hello") && Math.abs(v0y) > 0.02 && Math.abs(v1y) > 0.02 && Math.sign(v0y) !== Math.sign(v1y) && handsCloseForSchool) {
+          detectedSigns[0] = "School";
+          detectedSigns[1] = "School";
+        }
+      }
+
+      const face = faceResults?.faceLandmarks?.[0] || faceResults?.landmarks?.[0];
+      const pose = poseResults?.poseLandmarks?.[0] || poseResults?.landmarks?.[0];
+
+      if (face) {
+        const chin = face[152];
+        const forehead = face[10];
+        for (let i = 0; i < results.landmarks.length; i++) {
+          const landmarks = results.landmarks[i];
+          const thumbTip = landmarks[4];
+          const dMother = Math.sqrt(
+            Math.pow(thumbTip.x - chin.x, 2) +
+            Math.pow(thumbTip.y - chin.y, 2)
+          );
+          const dFather = Math.sqrt(
+            Math.pow(thumbTip.x - forehead.x, 2) +
+            Math.pow(thumbTip.y - forehead.y, 2)
+          );
+          if (!motherHoldRef.current[i]) motherHoldRef.current[i] = 0;
+          if (!fatherHoldRef.current[i]) fatherHoldRef.current[i] = 0;
+          if (dMother < 0.06) {
+            motherHoldRef.current[i]++;
+            if (motherHoldRef.current[i] > 6) detectedSigns[i] = "Mother";
+          } else {
+            motherHoldRef.current[i] = 0;
+          }
+        if (dFather < 0.06) {
+          fatherHoldRef.current[i]++;
+          if (fatherHoldRef.current[i] > 6) detectedSigns[i] = "Father";
+        } else {
+          fatherHoldRef.current[i] = 0;
+        }
+        const indexTipForGood = landmarks[8];
+        if (!goodStateRef.current[i]) goodStateRef.current[i] = { stage: 'none', timer: 0 };
+        const dChinIdx = Math.sqrt(
+          Math.pow(indexTipForGood.x - chin.x, 2) +
+          Math.pow(indexTipForGood.y - chin.y, 2)
+        );
+        const pathGood = handPathRef.current[i] || [];
+        if (dChinIdx < 0.06) {
+          goodStateRef.current[i] = { stage: 'nearChin', timer: 0 };
+        } else if (goodStateRef.current[i].stage === 'nearChin' && pathGood.length >= 8) {
+          const zDeltaGood = pathGood[pathGood.length - 1].z - pathGood[0].z;
+          const yDeltaGood = pathGood[pathGood.length - 1].y - pathGood[0].y;
+          if (zDeltaGood < -0.05 || yDeltaGood > 0.03) {
+            detectedSigns[i] = "Good";
+            goodStateRef.current[i] = { stage: 'none', timer: 0 };
+          } else {
+            goodStateRef.current[i].timer++;
+            if (goodStateRef.current[i].timer > 40) goodStateRef.current[i] = { stage: 'none', timer: 0 };
+          }
+        }
+      }
+    }
+
+      if (pose) {
+        const leftShoulder = pose[11];
+        const rightShoulder = pose[12];
+        const leftElbow = pose[13];
+        const rightElbow = pose[14];
+        const leftWrist = pose[15];
+        const rightWrist = pose[16];
+        const chestYMin = Math.min(leftShoulder.y, rightShoulder.y);
+        const chestYMax = chestYMin + 0.15;
+        const crossX = rightWrist.x < leftShoulder.x && leftWrist.x > rightShoulder.x;
+        const chestRange = rightWrist.y > chestYMin && rightWrist.y < chestYMax && leftWrist.y > chestYMin && leftWrist.y < chestYMax;
+        const elbowsBent = Math.abs(leftElbow.x - leftWrist.x) < 0.12 && Math.abs(rightElbow.x - rightWrist.x) < 0.12;
+        if (crossX && chestRange && elbowsBent) {
+          loveHoldRef.current++;
+          if (loveHoldRef.current > 8) {
+            detectedSigns[0] = "Love";
+            if (detectedSigns.length > 1) detectedSigns[1] = "Love";
+          }
+        } else {
+          loveHoldRef.current = 0;
+        }
+
+        const palmsClose = Math.sqrt(
+          Math.pow((leftWrist.x - rightWrist.x) * canvas.width, 2) +
+          Math.pow((leftWrist.y - rightWrist.y) * canvas.height, 2)
+        ) < 180;
+        const rightPrevY = lastHandYRef.current[1] !== undefined ? lastHandYRef.current[1] : rightWrist.y;
+        const leftPrevY = lastHandYRef.current[0] !== undefined ? lastHandYRef.current[0] : leftWrist.y;
+        const rightUp = (rightPrevY - rightWrist.y) > 0.02;
+        const leftDownSmall = (leftWrist.y - leftPrevY) > 0.01;
+        if (palmsClose && rightUp) {
+          detectedSigns[1] = "Morning";
+        }
+        if (palmsClose && leftDownSmall && Math.abs((rightPrevY - rightWrist.y)) < 0.01) {
+          detectedSigns[0] = "Afternoon";
+        }
+        const rightDown = (rightWrist.y - rightPrevY) > 0.02;
+        if (palmsClose && rightDown) {
+          detectedSigns[1] = "Night";
+        }
+      }
+
+      if (pose || face) {
+        for (let i = 0; i < results.landmarks.length; i++) {
+          if (!deafStateRef.current[i]) deafStateRef.current[i] = { stage: 'none', timer: 0 };
+          const state = deafStateRef.current[i];
+          const indexTip = results.landmarks[i][8];
+          const mouthCenter = face ? { x: (face[13].x + face[14].x) / 2, y: (face[13].y + face[14].y) / 2 } : null;
+          const leftEar = pose ? pose[7] : (face ? face[234] : null);
+          const rightEar = pose ? pose[8] : (face ? face[454] : null);
+          const earTarget = leftEar && rightEar ? (Math.abs(indexTip.x - leftEar.x) < Math.abs(indexTip.x - rightEar.x) ? leftEar : rightEar) : (leftEar || rightEar);
+          state.timer = Math.min(120, state.timer + 1);
+          if (state.stage === 'none' && mouthCenter) {
+            const dMouth = Math.sqrt(Math.pow(indexTip.x - mouthCenter.x, 2) + Math.pow(indexTip.y - mouthCenter.y, 2));
+            if (dMouth < 0.05) {
+              state.stage = 'mouth';
+              state.timer = 0;
+            }
+          } else if (state.stage === 'mouth' && earTarget) {
+            const dEar = Math.sqrt(Math.pow(indexTip.x - earTarget.x, 2) + Math.pow(indexTip.y - earTarget.y, 2));
+            if (dEar < 0.07) {
+              detectedSigns[i] = "Deaf";
+              state.stage = 'none';
+              state.timer = 0;
+            } else if (state.timer > 60) {
+              state.stage = 'none';
+            }
+          }
+          deafStateRef.current[i] = state;
+        }
       }
       
       updateGestureOutput(detectedSigns);
@@ -342,6 +570,12 @@ export default function InterpreterPage() {
       lastHandXRef.current = {};
       stateTimersRef.current = {};
       handPositionsRef.current = {};
+      motherHoldRef.current = {};
+      fatherHoldRef.current = {};
+      loveHoldRef.current = 0;
+      deafStateRef.current = {};
+      goodStateRef.current = {};
+      recentPhrasesRef.current = [];
       updateGestureOutput([]);
     }
     
@@ -372,6 +606,28 @@ export default function InterpreterPage() {
       }
     }
     
+    const now = performance.now();
+    const phraseParts = ["Good", "Morning", "Afternoon", "Night"];
+    for (const s of signs) {
+      if (phraseParts.includes(s)) {
+        recentPhrasesRef.current.push({ text: s, time: now });
+      }
+    }
+    recentPhrasesRef.current = recentPhrasesRef.current.filter(p => now - p.time < 2000);
+    const hasGood = recentPhrasesRef.current.find(p => p.text === "Good");
+    const hasMorning = recentPhrasesRef.current.find(p => p.text === "Morning");
+    const hasAfternoon = recentPhrasesRef.current.find(p => p.text === "Afternoon");
+    const hasNight = recentPhrasesRef.current.find(p => p.text === "Night");
+    if (hasGood && hasMorning) {
+      outputText = "Good Morning";
+      mainSign = "Good Morning";
+    } else if (hasGood && hasAfternoon) {
+      outputText = "Good Afternoon";
+      mainSign = "Good Afternoon";
+    } else if (hasGood && hasNight) {
+      outputText = "Good Night";
+      mainSign = "Good Night";
+    }
     setDetectedSign(outputText);
     
     // Show "Hand Tracking Active" indicator when hand is detected
@@ -395,7 +651,7 @@ export default function InterpreterPage() {
   };
 
   // Load MediaPipe Tasks Vision dynamically via script tag
-  const loadMediaPipe = async (): Promise<{ HandLandmarker: any; FilesetResolver: any }> => {
+  const loadMediaPipe = async (): Promise<{ HandLandmarker: any; FilesetResolver: any; FaceLandmarker: any; PoseLandmarker: any }> => {
     if ((window as any).mediapipe?.tasks?.vision) {
       return (window as any).mediapipe.tasks.vision;
     }
@@ -426,8 +682,8 @@ export default function InterpreterPage() {
       script.type = 'module';
       script.setAttribute('data-mediapipe', 'true');
       script.textContent = `
-        import { HandLandmarker, FilesetResolver } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest';
-        window.mediapipe = { tasks: { vision: { HandLandmarker, FilesetResolver } } };
+        import { HandLandmarker, FilesetResolver, FaceLandmarker, PoseLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest';
+        window.mediapipe = { tasks: { vision: { HandLandmarker, FilesetResolver, FaceLandmarker, PoseLandmarker } } };
         window.dispatchEvent(new Event('mediapipe-loaded'));
       `;
       
@@ -477,9 +733,53 @@ export default function InterpreterPage() {
     }
   };
 
+  const createFaceLandmarker = async () => {
+    try {
+      const { FaceLandmarker, FilesetResolver } = await loadMediaPipe();
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+      );
+      const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO"
+      });
+      faceLandmarkerRef.current = faceLandmarker;
+      return true;
+    } catch (error) {
+      console.error("Face init error", error);
+      return false;
+    }
+  };
+
+  const createPoseLandmarker = async () => {
+    try {
+      const { PoseLandmarker, FilesetResolver } = await loadMediaPipe();
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+      );
+      const poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO"
+      });
+      poseLandmarkerRef.current = poseLandmarker;
+      return true;
+    } catch (error) {
+      console.error("Pose init error", error);
+      return false;
+    }
+  };
+
   // Main prediction loop
   const predictWebcam = () => {
     const handLandmarker = handLandmarkerRef.current;
+    const faceLandmarker = faceLandmarkerRef.current;
+    const poseLandmarker = poseLandmarkerRef.current;
     const video = videoRef.current;
     
     if (!cameraActive || !handLandmarker || !video) {
@@ -497,7 +797,9 @@ export default function InterpreterPage() {
       lastVideoTimeRef.current = video.currentTime;
       try {
         const results = handLandmarker.detectForVideo(video, nowInMs);
-        drawResults(results);
+        const faceResults = faceLandmarker ? faceLandmarker.detectForVideo(video, nowInMs) : null;
+        const poseResults = poseLandmarker ? poseLandmarker.detectForVideo(video, nowInMs) : null;
+        drawResults(results, faceResults, poseResults);
       } catch (error) {
         console.error("Error in detection:", error);
       }
@@ -539,11 +841,11 @@ export default function InterpreterPage() {
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
 
-      // Initialize MediaPipe
-      const success = await createHandLandmarker();
-      
-      if (success && handLandmarkerRef.current) {
-        console.log("Starting prediction loop...");
+      const s1 = await createHandLandmarker();
+      await createFaceLandmarker();
+      await createPoseLandmarker();
+      setIsProcessing(false);
+      if (s1 && handLandmarkerRef.current) {
         predictWebcam();
       }
     };
@@ -728,75 +1030,6 @@ export default function InterpreterPage() {
     speechSynthesis.speak(utterance);
   };
 
-  const basicASLSigns = [
-    { 
-      name: 'HELLO', 
-      emoji: '👋', 
-      description: 'Open palm wave',
-      category: 'Greetings'
-    },
-    { 
-      name: 'YES', 
-      emoji: '👍', 
-      description: 'Fist nod (approximated as fist)',
-      category: 'Responses'
-    },
-    { 
-      name: 'NO', 
-      emoji: '✌️', 
-      description: 'Index+middle extended, others curled',
-      category: 'Responses'
-    },
-    { 
-      name: 'THANK YOU', 
-      emoji: '🤲', 
-      description: 'Flat hand from chin outward (reference)',
-      category: 'Greetings'
-    },
-    { 
-      name: 'I LOVE YOU', 
-      emoji: '🤟', 
-      description: 'Thumb, index, and pinky extended',
-      category: 'Emotions'
-    },
-    { 
-      name: 'OK', 
-      emoji: '👌', 
-      description: 'Circle with thumb and index',
-      category: 'Responses'
-    },
-    { 
-      name: 'A', 
-      emoji: '✊', 
-      description: 'Fist; thumb along side',
-      category: 'Alphabet'
-    },
-    { 
-      name: 'B', 
-      emoji: '✋', 
-      description: 'Flat hand; thumb across palm',
-      category: 'Alphabet'
-    },
-    { 
-      name: 'L', 
-      emoji: '🫲', 
-      description: 'Index+thumb form an “L”',
-      category: 'Alphabet'
-    },
-    { 
-      name: 'I', 
-      emoji: '☝️', 
-      description: 'Only pinky extended',
-      category: 'Alphabet'
-    },
-    { 
-      name: 'रुको (Stop)', 
-      emoji: '✋', 
-      description: 'Open palm facing outward',
-      category: 'Actions'
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -818,10 +1051,10 @@ export default function InterpreterPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-transparent dark:border-gray-700 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.07)]"
             >
               {/* Video Container */}
-              <div className={`relative bg-gray-900 ${isFullscreen ? 'h-screen' : 'h-[600px]'}`}>
+              <div className={`relative bg-gray-900 ${isFullscreen ? 'h-screen' : 'h-[600px]'} dark:ring-1 dark:ring-gray-700 dark:rounded-xl dark:shadow-lg`}>
                 {cameraActive ? (
                   <>
                     <video
@@ -848,7 +1081,7 @@ export default function InterpreterPage() {
                     {/* Canvas overlay for hand landmarks */}
                     <canvas
                       ref={outputCanvasRef}
-                      className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                      className="absolute top-0 left-0 w-full h-full pointer-events-none rounded-xl"
                       style={{ transform: 'scaleX(-1)' }}
                     />
                     
@@ -867,7 +1100,7 @@ export default function InterpreterPage() {
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.8 }}
-                          className="absolute top-4 left-4 bg-blue-500 text-white px-6 py-3 rounded-xl shadow-lg"
+                          className="absolute top-4 left-4 bg-blue-500 dark:bg-blue-600/80 text-white px-6 py-3 rounded-xl shadow-lg border border-transparent dark:border-blue-400/40 backdrop-blur"
                         >
                           <div className="flex items-center gap-2">
                             <CheckCircle className="w-5 h-5" />
@@ -884,14 +1117,14 @@ export default function InterpreterPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.3 }}
-                        className="absolute top-4 right-4 bg-green-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm"
+                        className="absolute top-4 right-4 bg-green-500 dark:bg-green-600/80 text-white px-3 py-2 rounded-lg shadow-lg text-sm border border-transparent dark:border-green-400/40 backdrop-blur"
                       >
                         ✋ Hand Tracking Active
                       </motion.div>
                     )}
 
                     {/* Controls Overlay */}
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-3">
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-3 bg-black/20 dark:bg-gray-800/60 px-4 py-3 rounded-xl backdrop-blur border border-transparent dark:border-gray-700">
                       <button
                         onClick={stopCamera}
                         className="p-4 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
@@ -900,13 +1133,13 @@ export default function InterpreterPage() {
                       </button>
                       <button
                         onClick={() => setAudioEnabled(!audioEnabled)}
-                        className="p-4 bg-gray-700 hover:bg-gray-600 text-white rounded-full shadow-lg transition-colors"
+                        className="p-4 bg-gray-700 dark:bg-gray-900/60 hover:bg-gray-600 text-white rounded-full shadow-lg transition-colors"
                       >
                         {audioEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
                       </button>
                       <button
                         onClick={() => setIsFullscreen(!isFullscreen)}
-                        className="p-4 bg-gray-700 hover:bg-gray-600 text-white rounded-full shadow-lg transition-colors"
+                        className="p-4 bg-gray-700 dark:bg-gray-900/60 hover:bg-gray-600 text-white rounded-full shadow-lg transition-colors"
                       >
                         {isFullscreen ? <Minimize className="w-6 h-6" /> : <Maximize className="w-6 h-6" />}
                       </button>
@@ -963,8 +1196,8 @@ export default function InterpreterPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center p-8">
-                    <div className="text-center max-w-md">
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-center max-w-md p-8">
                       {cameraError ? (
                         <>
                           {/* Error States */}
@@ -1146,7 +1379,7 @@ export default function InterpreterPage() {
 
               {/* Output Section */}
               {(cameraActive || demoMode) && (
-                <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-b-2xl border border-transparent dark:border-gray-700">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2">Current Translation</h3>
@@ -1173,7 +1406,7 @@ export default function InterpreterPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                className="mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-transparent dark:border-gray-700"
               >
                 <h3 className="text-lg mb-4 text-gray-900 dark:text-white">Detection History</h3>
                 <div className="flex flex-wrap gap-2">
@@ -1191,283 +1424,209 @@ export default function InterpreterPage() {
           </div>
 
           {/* Side Panel */}
-          <div className="space-y-6">
-            {/* ASL Learning Guide */}
+          <div className="space-y-4">
+            {/* ASL Learning Guide - Compact */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 border border-transparent dark:border-gray-700"
             >
-              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">🎯 Learn Basic ASL</h3>
+              <h3 className="text-base mb-3 text-gray-900 dark:text-white">🎯 Quick ASL Tips</h3>
               
-              <div className="space-y-4">
-                {/* Basic Hand Positions */}
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Hand Positions</h4>
+              <div className="space-y-3">
+                {/* Basic Hand Positions - Compact */}
+                <div className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2 text-sm">Hand Positions</h4>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">✋</span>
+                      <span className="text-base">✋</span>
                       <span>Open Palm</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">✊</span>
+                      <span className="text-base">✊</span>
                       <span>Closed Fist</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">👍</span>
+                      <span className="text-base">👍</span>
                       <span>Thumb Up</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">👆</span>
+                      <span className="text-base">👆</span>
                       <span>Pointing</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Common Patterns */}
-                <div className="p-4 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-xl">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Common Patterns</h4>
+                {/* Detection Tips - Compact */}
+                <div className="p-3 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2 text-sm">💡 Detection Tips</h4>
                   <ul className="text-xs space-y-1 text-gray-600 dark:text-gray-400">
-                    <li>• Single finger = Pointing/You/Me</li>
-                    <li>• Thumb up = Yes/Approval</li>
-                    <li>• Open palm = Greeting/Stop</li>
-                    <li>• Two fingers = Peace/Good</li>
-                  </ul>
-                </div>
-
-                {/* Tips for Better Detection */}
-                <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">💡 Detection Tips</h4>
-                  <ul className="text-xs space-y-1 text-gray-600 dark:text-gray-400">
-                    <li>• Keep hands 6-12 inches from camera</li>
-                    <li>• Ensure good lighting on hands</li>
-                    <li>• Move slowly between signs</li>
-                    <li>• Hold signs for 2-3 seconds</li>
-                    <li>• Keep fingers clearly separated</li>
+                    <li>• Keep hands 6-12" from camera</li>
+                    <li>• Ensure good lighting</li>
+                    <li>• Hold signs 2-3 seconds</li>
                   </ul>
                 </div>
               </div>
             </motion.div>
 
-            {/* Visual ASL Reference */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-            >
-              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">📚 ASL Visual Reference</h3>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Essential Greetings */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm">Greetings & Basic</h4>
-                  
-                  <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl">
-                        🙏
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">Namaste</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">Prayer hands</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white text-xl">
-                        ✋
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">Hello</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">Open palm</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white text-xl">
-                        🤚
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">Goodbye</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">Waving hand</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Common Responses */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900 dark:text-white text-sm">Responses & Actions</h4>
-                  
-                  <div className="p-3 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xl">
-                        👍
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">Yes</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">Thumbs up</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white text-xl">
-                        👎
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">No</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">Thumbs down</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white text-xl">
-                        ✋
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">Stop</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">Open palm forward</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Signs */}
-              <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-pink-50 dark:from-indigo-900/20 dark:to-pink-900/20 rounded-xl">
-                <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-3">More Essential Signs</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="text-center">
-                    <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-1">
-                      👆
-                    </div>
-                    <div className="text-xs font-medium">You</div>
-                    <div className="text-xs text-gray-500">Pointing</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-1">
-                      🤟
-                    </div>
-                    <div className="text-xs font-medium">Love</div>
-                    <div className="text-xs text-gray-500">ILY sign</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-1">
-                      🤏
-                    </div>
-                    <div className="text-xs font-medium">OK</div>
-                    <div className="text-xs text-gray-500">Finger circle</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-1">
-                      ✌️
-                    </div>
-                    <div className="text-xs font-medium">Good</div>
-                    <div className="text-xs text-gray-500">Peace sign</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                <div className="text-xs text-yellow-800 dark:text-yellow-200">
-              <strong>💡 Pro Tip:</strong> These are basic ASL signs. For complex conversations, learn finger spelling and grammar rules. Practice regularly for better fluency!
-                </div>
-              </div>
-            </motion.div>
+            
 
             {/* Detailed ASL Sign Formation Guide */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-transparent dark:border-gray-700"
             >
               <h3 className="text-lg mb-4 text-gray-900 dark:text-white">👐 How to Form ASL Signs</h3>
-              
               <div className="space-y-4">
-                {/* Step-by-step guides */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl">
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                      <span className="text-lg">🙏</span> Namaste Formation
-                    </h4>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Thank You</h4>
                     <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
-                      <li>1. Bring palms together at chest level</li>
-                      <li>2. Fingers pointing upwards</li>
-                      <li>3. Thumbs touching chest</li>
-                      <li>4. Slight bow of head (optional)</li>
+                      <li>1. Fingers touch chin</li>
+                      <li>2. Palm inward</li>
+                      <li>3. Move forward and down</li>
                     </ol>
                   </div>
 
                   <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-xl">
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                      <span className="text-lg">✋</span> Hello Formation
-                    </h4>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Please</h4>
                     <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
-                      <li>1. Open palm completely</li>
-                      <li>2. Fingers together, extended</li>
-                      <li>3. Thumb relaxed at side</li>
-                      <li>4. Move hand side to side</li>
+                      <li>1. Flat hand over chest</li>
+                      <li>2. Rub in a small circle</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Mother</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Open hand</li>
+                      <li>2. Thumb touches chin</li>
+                      <li>3. Hold briefly</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Father</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Open hand</li>
+                      <li>2. Thumb touches forehead</li>
+                      <li>3. Hold briefly</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Deaf</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Index touches mouth</li>
+                      <li>2. Then touch ear</li>
+                      <li>3. Complete within 2 seconds</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Love</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Cross arms over chest</li>
+                      <li>2. Wrists near shoulders</li>
+                      <li>3. Hold briefly</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Good + Morning/Afternoon/Night</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Good: index near chin then move outward</li>
+                      <li>2. Morning: raise one hand near the other</li>
+                      <li>3. Afternoon: small downward tap</li>
+                      <li>4. Night: move palm down onto the other</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Bathroom</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Index + middle up</li>
+                      <li>2. Wrist shakes left-right</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Friend</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Index fingers up on both hands</li>
+                      <li>2. Bring tips close together</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-lime-50 to-emerald-50 dark:from-lime-900/20 dark:to-emerald-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">School</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Open palms close</li>
+                      <li>2. Move up/down opposite directions</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-stone-50 to-zinc-50 dark:from-stone-900/20 dark:to-zinc-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Baby</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Closed fists</li>
+                      <li>2. Rock hands left-right alternately</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-900/20 dark:to-sky-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Stop</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. Both open palms</li>
+                      <li>2. One hand slaps downward onto the other</li>
                     </ol>
                   </div>
 
                   <div className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl">
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                      <span className="text-lg">👍</span> Yes Formation
-                    </h4>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Yes / No</h4>
                     <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
-                      <li>1. Make a fist with hand</li>
-                      <li>2. Extend thumb upwards</li>
-                      <li>3. Keep other fingers curled</li>
-                      <li>4. Move thumb up slightly</li>
+                      <li>1. Yes: thumbs up, other fingers down</li>
+                      <li>2. No: thumb down, other fingers down</li>
                     </ol>
                   </div>
 
-                  <div className="p-4 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-xl">
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                      <span className="text-lg">👎</span> No Formation
-                    </h4>
+                  <div className="p-4 bg-gradient-to-br from-fuchsia-50 to-pink-50 dark:from-fuchsia-900/20 dark:to-pink-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">I Love You (ILY)</h4>
                     <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
-                      <li>1. Make a fist with hand</li>
-                      <li>2. Extend thumb downwards</li>
-                      <li>3. Keep other fingers curled</li>
-                      <li>4. Move thumb down slightly</li>
+                      <li>1. Thumb, index, pinky extended</li>
+                      <li>2. Middle and ring curled</li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 rounded-xl">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">OK / Index Up</h4>
+                    <ol className="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+                      <li>1. OK: thumb and index form a circle</li>
+                      <li>2. Index Up: index up, others down</li>
                     </ol>
                   </div>
                 </div>
 
-                {/* Common Mistakes */}
                 <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                    <span className="text-lg">⚠️</span> Common Mistakes to Avoid
-                  </h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-3">Tips</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>
-                      <strong className="text-red-600 dark:text-red-400">❌ Don't:</strong>
+                      <strong className="text-red-600 dark:text-red-400">Avoid</strong>
                       <ul className="mt-1 space-y-1 text-gray-600 dark:text-gray-400">
-                        <li>• Rush through signs</li>
-                        <li>• Keep fingers too close</li>
-                        <li>• Poor lighting conditions</li>
-                        <li>• Hand too far/close to camera</li>
+                        <li>• Rushing through signs</li>
+                        <li>• Fingers mashed together</li>
+                        <li>• Poor lighting</li>
                       </ul>
                     </div>
                     <div>
-                      <strong className="text-green-600 dark:text-green-400">✅ Do:</strong>
+                      <strong className="text-green-600 dark:text-green-400">Do</strong>
                       <ul className="mt-1 space-y-1 text-gray-600 dark:text-gray-400">
-                        <li>• Hold signs for 2-3 seconds</li>
-                        <li>• Keep fingers clearly separated</li>
-                        <li>• Ensure good face/hand lighting</li>
-                        <li>• Maintain 6-12 inch distance</li>
+                        <li>• Hold for 2–3 seconds</li>
+                        <li>• Keep hands 6–12" from camera</li>
+                        <li>• Ensure clear view of face and hands</li>
                       </ul>
                     </div>
                   </div>
@@ -1480,7 +1639,7 @@ export default function InterpreterPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-transparent dark:border-gray-700"
             >
               <div className="flex items-center gap-2 mb-4">
                 <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -1506,63 +1665,11 @@ export default function InterpreterPage() {
               </ul>
             </motion.div>
 
-            {/* ASL Reference Guide */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-            >
-              <h3 className="text-lg mb-4 text-gray-900 dark:text-white">Basic ASL Signs Reference</h3>
-              
-              {/* Category Filter */}
-              <div className="mb-4 flex flex-wrap gap-2">
-                {['All', 'Greetings', 'Responses', 'Alphabet'].map((category) => (
-                  <button
-                    key={category}
-                    className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-              
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {basicASLSigns.map((sign, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer group"
-                  >
-                    <span className="text-2xl group-hover:scale-110 transition-transform">{sign.emoji}</span>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-900 dark:text-white font-medium">{sign.name}</p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{sign.description}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full">
-                        {sign.category}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => speakText(sign.name)}
-                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                    >
-                      <Volume2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-4 p-3 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl">
-                <p className="text-xs text-orange-700 dark:text-orange-300">
-                  💡 <strong>Tip:</strong> These are basic ASL signs. For complex conversations, consider professional interpretation services.
-                </p>
-              </div>
-            </motion.div>
-
             {/* Status */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
               className="bg-gradient-to-br from-blue-500 to-purple-500 text-white rounded-2xl shadow-lg p-6"
             >
               <h3 className="text-lg mb-2">System Status</h3>
@@ -1585,6 +1692,8 @@ export default function InterpreterPage() {
                 </div>
               </div>
             </motion.div>
+
+
           </div>
         </div>
       </div>

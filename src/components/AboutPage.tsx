@@ -16,9 +16,9 @@ interface AboutPageProps {
 
 export default function AboutPage({ onNavigate, darkMode = false, toggleDarkMode, isLoggedIn = false }: AboutPageProps) {
   const team = [
-    { name: 'Shivansh Ojha', role: 'Marketing Lead & Pitcher', avatar: shivanshImg, bio: 'Leading marketing strategy and business pitches', linkedin: 'https://www.linkedin.com/in/shivansh-ojha-87915b235/' },
-    { name: 'Aditya Bahuguna', role: 'UI/UX Designer & Front End Developer', avatar: adityaImg, bio: 'Creating inclusive and accessible experiences', linkedin: 'https://www.linkedin.com/in/aditya-bahuguna-/' },
-    { name: 'Aareev Srinivasan', role: 'Full Stack Developer & Graphics Head', avatar: aareevImg, bio: 'Building scalable applications and visual design', linkedin: 'https://www.linkedin.com/in/aareev-srinivasan-746851372/' },
+    { name: 'Shivansh Ojha', role: 'Co-Founder & CEO', avatar: shivanshImg, bio: 'Leading marketing strategy and business pitches', linkedin: 'https://www.linkedin.com/in/shivansh-ojha-87915b235/' },
+    { name: 'Aditya Bahuguna', role: 'Co-Founder & CIO', avatar: adityaImg, bio: 'Creating inclusive and accessible experiences', linkedin: 'https://www.linkedin.com/in/aditya-bahuguna-/' },
+    { name: 'Aareev Srinivasan', role: 'Co-Founder & CTO', avatar: aareevImg, bio: 'Building scalable applications and visual design', linkedin: 'https://www.linkedin.com/in/aareev-srinivasan-746851372/' },
   ];
 
   const values = [
