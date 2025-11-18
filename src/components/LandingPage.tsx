@@ -28,16 +28,64 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
     avatar: '👤'
   });
   const [hoverRating, setHoverRating] = React.useState(0);
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   const scrollToAbout = () => {
     const aboutSection = document.getElementById('about-section');
     aboutSection?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleSearch = (q: string) => {
+    setSearchQuery(q);
+    const faqSection = document.getElementById('faq-section');
+    faqSection?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const faqs = [
+    {
+      q: 'What is Vaani Setu?',
+      a: "Vaani Setu is an AI-powered platform that interprets sign language in real-time through your camera and converts it into text and speech. It's designed to bridge communication gaps between hearing-impaired and non-impaired individuals, making conversations seamless and inclusive."
+    },
+    {
+      q: 'How accurate is the sign language detection?',
+      a: 'Our AI models are trained on extensive datasets and achieve high accuracy rates for American Sign Language (ASL). Accuracy improves with good lighting, clear hand positioning, and moderate signing speed. We continuously update our models to enhance performance across different conditions and regional variations.'
+    },
+    {
+      q: 'Is my camera data stored or recorded?',
+      a: 'No. Your privacy is our top priority. All video processing happens locally on your device in real-time. We do not record, store, or transmit your camera feed to any external servers. Your data stays with you.'
+    },
+    {
+      q: 'Which sign languages are supported?',
+      a: 'Currently, Vaani Setu supports American Sign Language (ASL) with plans to expand to British Sign Language (BSL) and other sign languages in the near future. We\'re actively working to make the platform more inclusive and accessible globally.'
+    },
+    {
+      q: 'Do I need special equipment to use Vaani Setu?',
+      a: 'No special equipment is required! Vaani Setu works with any standard webcam or device camera. For best results, we recommend using a device with a good quality camera in a well-lit environment. The platform is accessible on desktop, tablet, and mobile devices.'
+    },
+    {
+      q: 'Can I learn sign language through Vaani Setu?',
+      a: 'Absolutely! Vaani Setu includes comprehensive interactive tutorials covering beginner to advanced levels. Learn at your own pace with video lessons, practice exercises, and a supportive community forum. Our tutorials cover greetings, daily conversations, emergency signs, numbers, and much more.'
+    },
+    {
+      q: 'Is Vaani Setu free to use?',
+      a: "Yes! Vaani Setu's core features including real-time sign language interpretation, basic tutorials, and community access are completely free. We believe in making communication accessible to everyone. Premium features and advanced courses may be available in the future."
+    },
+    {
+      q: 'How can I get support or report issues?',
+      a: "We're here to help! You can reach our support team via email at support@vaanisetu.com or call our toll-free helpline at +91 1800-123-456 (Mon-Fri, 9 AM - 6 PM IST). You can also visit our community forum to connect with other users and get answers to common questions."
+    }
+  ];
+
+  const filteredFaqs = faqs.filter(item => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return item.q.toLowerCase().includes(q) || item.a.toLowerCase().includes(q);
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Navigation */}
-      <PublicNav onNavigate={onNavigate} currentPage="landing" darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      <PublicNav onNavigate={onNavigate} currentPage="landing" darkMode={darkMode} toggleDarkMode={toggleDarkMode} onSearch={handleSearch} />
       
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 dark:from-gray-900 dark:via-blue-900/30 dark:to-purple-900/30 overflow-hidden">
@@ -727,7 +775,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
       </div>
 
       {/* FAQ Section */}
-      <div className="py-24 px-4 bg-gray-50 dark:bg-gray-900">
+      <div id="faq-section" className="py-24 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -754,77 +802,16 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             viewport={{ once: true }}
           >
             <Accordion type="single" collapsible className="space-y-4">
-              <AccordionItem value="item-1" className="bg-white dark:bg-gray-800 rounded-2xl px-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left hover:no-underline py-5">
-                  <span className="text-gray-900 dark:text-white">What is Vaani Setu?</span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-                  Vaani Setu is an AI-powered platform that interprets sign language in real-time through your camera and converts it into text and speech. It's designed to bridge communication gaps between hearing-impaired and non-impaired individuals, making conversations seamless and inclusive.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-2" className="bg-white dark:bg-gray-800 rounded-2xl px-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left hover:no-underline py-5">
-                  <span className="text-gray-900 dark:text-white">How accurate is the sign language detection?</span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-Our AI models are trained on extensive datasets and achieve high accuracy rates for American Sign Language (ASL). Accuracy improves with good lighting, clear hand positioning, and moderate signing speed. We continuously update our models to enhance performance across different conditions and regional variations.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-3" className="bg-white dark:bg-gray-800 rounded-2xl px-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left hover:no-underline py-5">
-                  <span className="text-gray-900 dark:text-white">Is my camera data stored or recorded?</span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-                  No. Your privacy is our top priority. All video processing happens locally on your device in real-time. We do not record, store, or transmit your camera feed to any external servers. Your data stays with you.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-4" className="bg-white dark:bg-gray-800 rounded-2xl px-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left hover:no-underline py-5">
-                  <span className="text-gray-900 dark:text-white">Which sign languages are supported?</span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-Currently, Vaani Setu supports American Sign Language (ASL) with plans to expand to British Sign Language (BSL) and other sign languages in the near future. We're actively working to make the platform more inclusive and accessible globally.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-5" className="bg-white dark:bg-gray-800 rounded-2xl px-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left hover:no-underline py-5">
-                  <span className="text-gray-900 dark:text-white">Do I need special equipment to use Vaani Setu?</span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-                  No special equipment is required! Vaani Setu works with any standard webcam or device camera. For best results, we recommend using a device with a good quality camera in a well-lit environment. The platform is accessible on desktop, tablet, and mobile devices.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-6" className="bg-white dark:bg-gray-800 rounded-2xl px-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left hover:no-underline py-5">
-                  <span className="text-gray-900 dark:text-white">Can I learn sign language through Vaani Setu?</span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-                  Absolutely! Vaani Setu includes comprehensive interactive tutorials covering beginner to advanced levels. Learn at your own pace with video lessons, practice exercises, and a supportive community forum. Our tutorials cover greetings, daily conversations, emergency signs, numbers, and much more.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-7" className="bg-white dark:bg-gray-800 rounded-2xl px-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left hover:no-underline py-5">
-                  <span className="text-gray-900 dark:text-white">Is Vaani Setu free to use?</span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-                  Yes! Vaani Setu's core features including real-time sign language interpretation, basic tutorials, and community access are completely free. We believe in making communication accessible to everyone. Premium features and advanced courses may be available in the future.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-8" className="bg-white dark:bg-gray-800 rounded-2xl px-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left hover:no-underline py-5">
-                  <span className="text-gray-900 dark:text-white">How can I get support or report issues?</span>
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
-                  We're here to help! You can reach our support team via email at support@vaanisetu.com or call our toll-free helpline at +91 1800-123-456 (Mon-Fri, 9 AM - 6 PM IST). You can also visit our community forum to connect with other users and get answers to common questions.
-                </AccordionContent>
-              </AccordionItem>
+              {filteredFaqs.map((item, idx) => (
+                <AccordionItem key={item.q} value={`item-${idx + 1}`} className="bg-white dark:bg-gray-800 rounded-2xl px-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+                  <AccordionTrigger className="text-left hover:no-underline py-5">
+                    <span className="text-gray-900 dark:text-white">{item.q}</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="text-gray-600 dark:text-gray-300 pb-5">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
             </Accordion>
           </motion.div>
 

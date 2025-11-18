@@ -1,4 +1,4 @@
-import { Menu, X, Moon, Sun } from 'lucide-react';
+import { Menu, X, Moon, Sun, Search } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import logo from 'figma:asset/bd00bd3a9f16cf036d031e12858b5516cf661d7f.png';
@@ -8,10 +8,18 @@ interface PublicNavProps {
   currentPage?: string;
   darkMode?: boolean;
   toggleDarkMode?: () => void;
+  onSearch?: (query: string) => void;
 }
 
-export default function PublicNav({ onNavigate, currentPage, darkMode = false, toggleDarkMode }: PublicNavProps) {
+export default function PublicNav({ onNavigate, currentPage, darkMode = false, toggleDarkMode, onSearch }: PublicNavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const submitSearch = () => {
+    const q = query.trim();
+    if (!q) return;
+    onSearch?.(q);
+  };
 
   const navItems = [
     { id: 'landing', label: 'Home' },
@@ -49,11 +57,18 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
                 {item.label}
               </button>
             ))}
-            <div className="relative">
+            <div className="relative w-64 rounded-full border border-gray-300/60 bg-white/70 shadow-sm hover:shadow-md focus-within:border-gray-400 focus-within:shadow-md dark:bg-gray-800 dark:border-gray-700" role="search">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitSearch();
+                }}
                 placeholder="Search..."
-                className="pl-4 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 pl-7 pr-3 bg-transparent outline-none text-sm text-gray-700 placeholder:text-gray-500 dark:text-gray-300 dark:placeholder-gray-400"
+                aria-label="Search site"
               />
             </div>
             {toggleDarkMode && (
@@ -79,11 +94,18 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
 
           {/* Mobile Menu Button & Dark Mode Toggle */}
           <div className="md:hidden flex items-center gap-2">
-            <div className="relative">
+            <div className="relative w-40 rounded-full border border-gray-300/60 bg-white/70 shadow-sm hover:shadow-md focus-within:border-gray-400 focus-within:shadow-md dark:bg-gray-800 dark:border-gray-700" role="search">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitSearch();
+                }}
                 placeholder="Search..."
-                className="pl-4 pr-4 py-2 w-40 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 pl-7 pr-3 bg-transparent outline-none text-sm text-gray-700 placeholder:text-gray-500 dark:text-gray-300 dark:placeholder-gray-400"
+                aria-label="Search site"
               />
             </div>
             {toggleDarkMode && (
