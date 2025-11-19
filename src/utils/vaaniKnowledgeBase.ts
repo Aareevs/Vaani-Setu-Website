@@ -45,8 +45,8 @@ export const vaaniKnowledge = {
       ]
     },
     premium: {
-      name: "Vaani Setu Premium",
-      price: "₹199/month",
+      name: "Pro",
+      price: "$20/month",
       features: [
         "Unlimited usage",
         "Offline mode",
@@ -60,9 +60,9 @@ export const vaaniKnowledge = {
     },
     family: {
       name: "Family Plan",
-      price: "₹499/month",
+      price: "$49/month",
       features: [
-        "All Premium features",
+        "All Pro features",
         "Up to 5 user accounts",
         "Shared learning progress",
         "Family dashboard",

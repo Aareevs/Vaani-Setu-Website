@@ -36,7 +36,11 @@ interface Post {
   category: 'discussion' | 'question' | 'success' | 'feature-request' | 'tips';
 }
 
-export default function CommunityPage() {
+interface CommunityPageProps {
+  onNavigate?: (page: any) => void;
+}
+
+export default function CommunityPage({ onNavigate }: CommunityPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
   const [likedComments, setLikedComments] = useState<number[]>([]);
@@ -66,7 +70,7 @@ export default function CommunityPage() {
   const [posts, setPosts] = useState<Post[]>([
     {
       id: 1,
-      author: 'Priya Sharma',
+      author: 'Emily Carter',
       avatar: '👩',
       time: '2 hours ago',
   title: 'Tips for Learning ASL as a Complete Beginner',
@@ -79,7 +83,7 @@ export default function CommunityPage() {
     },
     {
       id: 2,
-      author: 'Rajesh Kumar',
+      author: 'Michael Brooks',
       avatar: '👨',
       time: '5 hours ago',
       title: 'How accurate is the AI detection in low light?',
@@ -92,7 +96,7 @@ export default function CommunityPage() {
     },
     {
       id: 3,
-      author: 'Anita Desai',
+      author: 'Sophia Evans',
       avatar: '👩‍🦰',
       time: '1 day ago',
       title: 'Success Story: Helped my grandmother communicate!',
@@ -105,7 +109,7 @@ export default function CommunityPage() {
     },
     {
       id: 4,
-      author: 'Arjun Patel',
+      author: 'Daniel Weber',
       avatar: '👨‍💼',
       time: '2 days ago',
       title: 'Request: Add support for more regional signs',
@@ -116,13 +120,65 @@ export default function CommunityPage() {
       createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       category: 'feature-request',
     },
+    {
+      id: 5,
+      author: 'Olivia Turner',
+      avatar: '👩‍💼',
+      time: '3 days ago',
+      title: 'Beginner resources that actually helped',
+      content: 'Sharing a list of videos and practice decks that made learning smoother for me...',
+      likes: 28,
+      comments: 9,
+      tags: ['beginners', 'tips', 'resources'],
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      category: 'tips',
+    },
+    {
+      id: 6,
+      author: 'Liam Scott',
+      avatar: '👨‍🔧',
+      time: '4 days ago',
+      title: 'Question: Finger spelling speed strategies?',
+      content: 'Any techniques to increase finger spelling speed while keeping accuracy high?',
+      likes: 17,
+      comments: 11,
+      tags: ['questions', 'finger-spelling'],
+      createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+      category: 'question',
+    },
+    {
+      id: 7,
+      author: 'Isabella Meyer',
+      avatar: '👩‍🦱',
+      time: '5 days ago',
+      title: 'Success: First conversation without subtitles!',
+      content: 'Had my first full conversation using signs only. Emotional and thrilling!',
+      likes: 76,
+      comments: 22,
+      tags: ['success-stories', 'motivation'],
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      category: 'success',
+    },
+    {
+      id: 8,
+      author: 'Ethan Clarke',
+      avatar: '👨‍🎓',
+      time: '1 week ago',
+      title: 'Feature idea: Custom practice decks',
+      content: 'Could we get sharable decks with custom sequences for practice sessions?',
+      likes: 31,
+      comments: 14,
+      tags: ['feature-request', 'practice'],
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      category: 'feature-request',
+    },
   ]);
 
   const [commentsData, setCommentsData] = useState<Record<number, Comment[]>>({
     1: [
       {
         id: 101,
-        author: 'Karan Verma',
+        author: 'Jason Reed',
         avatar: '👨‍💻',
         content: 'Great tips! I especially found the practice routine helpful.',
         time: '1 hour ago',
@@ -140,7 +196,7 @@ export default function CommunityPage() {
       },
       {
         id: 102,
-        author: 'Neha Singh',
+        author: 'Chloe Martin',
         avatar: '👩‍🎓',
         content: 'Can you share more about the daily practice schedule?',
         time: '30 min ago',
@@ -151,7 +207,7 @@ export default function CommunityPage() {
     2: [
       {
         id: 201,
-        author: 'Amit Patel',
+        author: 'Ryan Cooper',
         avatar: '🧑‍💼',
         content: 'I tested it in low light and it works okay but definitely better with good lighting.',
         time: '3 hours ago',
@@ -162,7 +218,7 @@ export default function CommunityPage() {
     3: [
       {
         id: 301,
-        author: 'Sanjay Kumar',
+        author: 'Lucas Bennett',
         avatar: '👨‍🏫',
         content: 'This is so heartwarming! Stories like these remind us why this platform is so important.',
         time: '20 hours ago',
@@ -173,7 +229,7 @@ export default function CommunityPage() {
     4: [
       {
         id: 401,
-        author: 'Deepa Reddy',
+        author: 'Grace Thompson',
         avatar: '👩‍⚕️',
         content: 'I agree! Regional variations would make it even more useful.',
         time: '1 day ago',
@@ -622,11 +678,20 @@ export default function CommunityPage() {
             <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
               Showing {filteredAndSortedPosts.length} of {posts.length} posts
             </div>
+
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={() => onNavigate?.('community-all')}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+              >
+                More Posts
+              </button>
+            </div>
             
             <div className="space-y-6">
               <AnimatePresence>
                 {filteredAndSortedPosts.map((post, index) => (
-                  <motion.div
+          <motion.div
                     key={post.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -636,8 +701,12 @@ export default function CommunityPage() {
                   >
                     {/* Post Header */}
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-2xl">
-                        {post.avatar}
+                      <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-white/50 shadow">
+                        <img
+                          src={String(post.avatar).startsWith('http') ? post.avatar : `https://i.pravatar.cc/80?img=${(post.id % 70) + 1}`}
+                          alt="User avatar"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div className="flex-1">
                         <h3 className="text-gray-900 dark:text-white">{post.author}</h3>
@@ -952,9 +1021,13 @@ export default function CommunityPage() {
                     <div key={comment.id} className="space-y-3">
                       {/* Comment */}
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-xl flex-shrink-0">
-                          {comment.avatar}
-                        </div>
+                      <div className="w-10 h-10 rounded-full overflow-hidden ring-1 ring-white/50 shadow flex-shrink-0">
+                        <img
+                          src={String(comment.avatar).startsWith('http') ? comment.avatar : `https://i.pravatar.cc/80?img=${(comment.id % 70) + 1}`}
+                          alt="User avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                         <div className="flex-1">
                           <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
                             <div className="flex items-center justify-between mb-2">
@@ -988,8 +1061,12 @@ export default function CommunityPage() {
                             <div className="mt-4 space-y-3 ml-6">
                               {comment.replies.map((reply) => (
                                 <div key={reply.id} className="flex items-start gap-2">
-                                  <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-sm flex-shrink-0">
-                                    {reply.avatar}
+                                  <div className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-white/40 flex-shrink-0">
+                                    <img
+                                      src={String(reply.avatar).startsWith('http') ? reply.avatar : `https://i.pravatar.cc/80?img=${(reply.id % 70) + 1}`}
+                                      alt="User avatar"
+                                      className="w-full h-full object-cover"
+                                    />
                                   </div>
                                   <div className="flex-1">
                                     <div className="bg-gray-100 dark:bg-gray-600 rounded-xl p-3">

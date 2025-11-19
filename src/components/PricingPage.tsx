@@ -41,8 +41,8 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
       popular: false,
     },
     {
-      name: 'Vaani Setu Premium',
-      price: '₹199',
+      name: 'Pro',
+      price: '$20',
       period: 'per month',
       icon: Zap,
       color: 'from-blue-500 to-purple-500',
@@ -58,18 +58,18 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
         'Custom vocabulary',
         'Progress tracking',
       ],
-      cta: 'Start Premium',
+      cta: 'Start Pro',
       popular: true,
     },
     {
       name: 'Family Plan',
-      price: '₹499',
+      price: '$49',
       period: 'per month',
       icon: Users,
       color: 'from-purple-500 to-pink-500',
       description: 'For families and small groups',
       features: [
-        'Everything in Premium',
+        'Everything in Pro',
         'Up to 5 user accounts',
         'Shared learning progress',
         'Family dashboard',
@@ -315,7 +315,7 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
               <h3 className="text-lg mb-3 text-gray-900 dark:text-white">Is there a free trial for premium plans?</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                The Freemium plan is free forever! For Premium and Family plans, we offer a 14-day 
+                The Freemium plan is free forever! For Pro and Family plans, we offer a 14-day 
                 money-back guarantee so you can try risk-free.
               </p>
             </div>

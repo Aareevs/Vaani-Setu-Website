@@ -6,6 +6,7 @@ import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import InterpreterPage from './components/InterpreterPage';
 import CommunityPage from './components/CommunityPage';
+import CommunityAllPage from './components/CommunityAllPage';
 import TutorialsPage from './components/TutorialsPage';
 import SettingsPage from './components/SettingsPage';
 import ProfilePage from './components/ProfilePage';
@@ -19,7 +20,7 @@ import { EnhancedBreadcrumb } from './components/ui/breadcrumb';
 import { OfflineIndicator } from './components/ui/OfflineIndicator';
 import { BackToTop } from './components/ui/BackToTop';
 
-type Page = 'landing' | 'about' | 'pricing' | 'login' | 'signup' | 'dashboard' | 'interpreter' | 'community' | 'tutorials' | 'settings' | 'profile' | '404';
+type Page = 'landing' | 'about' | 'pricing' | 'login' | 'signup' | 'dashboard' | 'interpreter' | 'community' | 'community-all' | 'tutorials' | 'settings' | 'profile' | '404';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
@@ -154,7 +155,9 @@ function App() {
       case 'interpreter':
         return <InterpreterPage />;
       case 'community':
-        return <CommunityPage />;
+        return <CommunityPage onNavigate={navigateTo} />;
+      case 'community-all':
+        return <CommunityAllPage onNavigate={navigateTo} />;
       case 'tutorials':
         return <TutorialsPage />;
       case 'settings':
