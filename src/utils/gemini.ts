@@ -1,33 +1,17 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
-if (!API_KEY) {
-  console.error("❌ Missing Gemini API key. Please set the VITE_GEMINI_API_KEY environment variable.");
-  throw new Error("Missing Gemini API key. Please set the VITE_GEMINI_API_KEY environment variable.");
-}
-
-console.log("🔑 API Key status:", API_KEY ? "Present" : "Missing");
-console.log("🔧 Environment:", import.meta.env.MODE);
-
-const genAI = new GoogleGenerativeAI(API_KEY);
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
+const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 
 export const getGeminiResponse = async (prompt: string) => {
   try {
-    console.log("🚀 Starting Gemini API call...");
-    console.log("📤 Prompt:", prompt.substring(0, 50) + "...");
-    
-    // Using a stable, widely available model to ensure compatibility.
+    if (!genAI) {
+      return "🔑 API key error: Please set the VITE_GEMINI_API_KEY environment variable.";
+    }
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-    console.log("🎯 Model initialized successfully");
-    
     const result = await model.generateContent(prompt);
-    console.log("📥 Respon se received from Gemini");
-    
     const response = await result.response;
     const text = response.text();
-    
-    console.log("✅ Response text extracted successfully");
     return text;
   } catch (error: any) {
     console.error("❌ Error getting response from Gemini:", error);
@@ -59,12 +43,12 @@ export const getGeminiResponse = async (prompt: string) => {
 // Test function to verify API connectivity
 export const testGeminiConnection = async () => {
   try {
-    console.log("🧪 Testing Gemini API connection...");
+    if (!genAI) {
+      return "🔑 API key error";
+    }
     const response = await getGeminiResponse("Hello, this is a test message. Please respond with 'Test successful!'");
-    console.log("✅ Connection test result:", response);
     return response;
   } catch (error) {
-    console.error("❌ Connection test failed:", error);
     return null;
   }
 };
