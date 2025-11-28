@@ -54,6 +54,7 @@ export default function InterpreterPage() {
   const deafStateRef = useRef<Record<number, { stage: 'none' | 'mouth' | 'ear'; timer: number }>>({});
   const goodStateRef = useRef<Record<number, { stage: 'none' | 'nearChin'; timer: number }>>({});
   const recentPhrasesRef = useRef<Array<{ text: string; time: number }>>([]);
+  const speechStateRef = useRef<{ text: string; lastSpokenAt: number }>({ text: '', lastSpokenAt: 0 });
   
   // Constants
   const Y_MOVEMENT_THRESHOLD = 0.01;
@@ -643,9 +644,22 @@ export default function InterpreterPage() {
       setDetectionHistory((prev: string[]) => [outputText, ...prev].slice(0, 10));
       
       if (audioEnabled && !mainSign.includes("moving...") && !mainSign.includes("slapping...") && mainSign !== "awaiting") {
-        const utterance = new SpeechSynthesisUtterance(outputText);
-        utterance.rate = 0.9;
-        speechSynthesis.speak(utterance);
+        const nowSpeak = performance.now();
+        const sameText = speechStateRef.current.text === outputText;
+        const intervalMs = 1500;
+        if (!sameText || (nowSpeak - (speechStateRef.current.lastSpokenAt || 0)) >= intervalMs) {
+          const utterance = new SpeechSynthesisUtterance(outputText);
+          utterance.rate = 0.9;
+          utterance.onend = () => {
+            speechStateRef.current.lastSpokenAt = performance.now();
+          };
+          speechStateRef.current.text = outputText;
+          speechStateRef.current.lastSpokenAt = nowSpeak;
+          if (speechSynthesis.speaking) {
+            speechSynthesis.cancel();
+          }
+          speechSynthesis.speak(utterance);
+        }
       }
     }
   };

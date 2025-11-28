@@ -19,12 +19,15 @@ import { useToast } from './hooks/useToast';
 import { EnhancedBreadcrumb } from './components/ui/breadcrumb';
 import { OfflineIndicator } from './components/ui/OfflineIndicator';
 import { BackToTop } from './components/ui/BackToTop';
+import { useAuth } from './context/AuthContext';
+import { supabase } from './utils/supabase';
 
 type Page = 'landing' | 'about' | 'pricing' | 'login' | 'signup' | 'dashboard' | 'interpreter' | 'community' | 'community-all' | 'tutorials' | 'settings' | 'profile' | '404';
 
 function App() {
+  const { user, signOut } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>('landing');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const isLoggedIn = !!user;
   const [userName, setUserName] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
   // Initialize dark mode from localStorage, default to light mode
@@ -40,18 +43,9 @@ function App() {
   });
   const { toasts, toast, removeToast } = useToast();
 
-  const handleLogin = (name: string) => {
-    setIsLoggedIn(true);
-    setUserName(name);
+  const handleLogin = () => {
     setCurrentPage('dashboard');
-    // Don't show profile image on first login
-    if (!localStorage.getItem('vaani:hasLoggedInBefore')) {
-      setProfileImage(null);
-      localStorage.setItem('vaani:hasLoggedInBefore', 'true');
-      // Clear any existing profile image data
-      localStorage.removeItem('vaani:profileImage');
-    }
-    toast.success('Login Successful!', `Welcome back, ${name}!`);
+    toast.success('Login Successful!', `Welcome back!`);
   };
 
   const handleProfileImageUpdate = (image: string | null) => {
@@ -67,8 +61,8 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    await signOut();
     setUserName('');
     setProfileImage(null);
     setCurrentPage('landing');
@@ -121,22 +115,38 @@ function App() {
     }
   }, []);
 
-  // Load profile image from localStorage after component mounts (only if user has logged in before)
+  // Load profile image and user data from Supabase
   useEffect(() => {
-    if (isLoggedIn) {
-      try {
-        // Only load profile image if user has logged in before
-        if (localStorage.getItem('vaani:hasLoggedInBefore')) {
-          const stored = localStorage.getItem('vaani:profileImage');
-          if (stored) {
-            setProfileImage(stored);
+    if (user) {
+      setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User');
+      
+      const fetchProfile = async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('avatar_url, username')
+            .eq('id', user.id)
+            .single();
+            
+          if (data) {
+            if (data.username) setUserName(data.username);
+            if (data.avatar_url) setProfileImage(data.avatar_url);
           }
+        } catch (e) {
+          console.error('Error fetching profile:', e);
         }
-      } catch (e) {
-        // ignore localStorage errors
-      }
+      };
+      
+      fetchProfile();
+    } else {
+      setUserName('');
+      setProfileImage(null);
     }
-  }, [isLoggedIn]);
+  }, [user]);
+
+  const handleProfileNameUpdate = (name: string) => {
+    setUserName(name);
+  };
 
   const renderPage = () => {
     switch (currentPage) {
@@ -163,7 +173,7 @@ function App() {
       case 'settings':
         return <SettingsPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
       case 'profile':
-        return <ProfilePage userName={userName} onNavigate={navigateTo} profileImage={profileImage} onProfileImageUpdate={handleProfileImageUpdate} onLogout={handleLogout} />;
+        return <ProfilePage userName={userName} onNavigate={navigateTo} profileImage={profileImage} onProfileImageUpdate={handleProfileImageUpdate} onProfileNameUpdate={handleProfileNameUpdate} onLogout={handleLogout} />;
       case '404':
         return <NotFoundPage onNavigate={navigateTo} />;
       default:

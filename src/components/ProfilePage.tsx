@@ -4,12 +4,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '../hooks/useToast';
 import { useAnnouncer } from '../hooks/useAccessibility';
 import EmojiPicker from './EmojiPicker';
+import { supabase } from '../utils/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface ProfilePageProps {
   userName: string;
   onNavigate: (page: any) => void;
   profileImage?: string | null;
   onProfileImageUpdate?: (image: string | null) => void;
+  onProfileNameUpdate?: (name: string) => void;
   onLogout?: () => void;
 }
 
@@ -43,15 +46,16 @@ interface UserStats {
   lastActiveDate: string;
 }
 
-export default function ProfilePage({ userName, onNavigate, profileImage: initialProfileImage, onProfileImageUpdate, onLogout }: ProfilePageProps) {
+export default function ProfilePage({ userName, onNavigate, profileImage: initialProfileImage, onProfileImageUpdate, onProfileNameUpdate, onLogout }: ProfilePageProps) {
   const { addToast } = useToast();
   const { announce } = useAnnouncer();
+  const { user } = useAuth();
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [displayName, setDisplayName] = useState(userName);
-  const [displayEmail, setDisplayEmail] = useState(`${userName.toLowerCase()}@email.com`);
+  const [displayEmail, setDisplayEmail] = useState(user?.email || '');
   const [editName, setEditName] = useState(userName);
-  const [editEmail, setEditEmail] = useState(`${userName.toLowerCase()}@email.com`);
+  const [editEmail, setEditEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -174,12 +178,26 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
     setIsSaving(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!user) throw new Error('No user logged in');
+
+      const updates = {
+        id: user.id,
+        username: editName,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from('profiles').upsert(updates);
+      if (error) throw error;
+
+      if (newPassword) {
+        const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
+        if (pwError) throw pwError;
+      }
       
       // Update displayed name and email
       setDisplayName(editName);
       setDisplayEmail(editEmail);
+      onProfileNameUpdate?.(editName);
       
       // Reset password fields
       setCurrentPassword('');
@@ -195,36 +213,76 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
       
       // Reset errors
       setErrors({});
-    } catch (error) {
-      addToast('Failed to update profile. Please try again.', 'error');
+    } catch (error: any) {
+      addToast('Failed to update profile. ' + (error.message || 'Please try again.'), 'error');
       announce('Profile update failed', 'assertive');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        setProfileImage(imageUrl);
+    if (file && user) {
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            avatar_url: publicUrl,
+            updated_at: new Date().toISOString(),
+          });
+
+        if (updateError) throw updateError;
+
+        setProfileImage(publicUrl);
         setProfileEmoji('👤'); // Reset to default emoji when image is uploaded
-        onProfileImageUpdate?.(imageUrl);
-      };
-      reader.readAsDataURL(file);
+        onProfileImageUpdate?.(publicUrl);
+        addToast('Profile image updated successfully!', 'success');
+      } catch (error: any) {
+        addToast('Error uploading image: ' + (error.message || 'Unknown error'), 'error');
+      }
     }
   };
 
-  const handleRemoveImage = () => {
-    setProfileImage(null);
-    setProfileEmoji('👤'); // Reset to default emoji when image is removed
-    onProfileImageUpdate?.(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const handleRemoveImage = async () => {
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            avatar_url: null,
+            updated_at: new Date().toISOString(),
+          });
+          
+        if (error) throw error;
+        
+        setProfileImage(null);
+        setProfileEmoji('👤'); // Reset to default emoji when image is removed
+        onProfileImageUpdate?.(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        addToast('Profile image removed', 'info');
+      } catch (error: any) {
+        addToast('Error removing image', 'error');
+      }
     }
-    addToast('Profile image removed', 'info');
   };
 
   const handleExportData = () => {
@@ -296,7 +354,6 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
     return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   };
 
-  const profileEmojiOptions = ['👤', '👨', '👩', '🧑', '👨‍💻', '👩‍💻', '🧑‍💻', '👨‍🎨', '👩‍🎨', '🎨', '🎯', '⭐', '🚀', '💼', '🎓'];
   const achievements = [
     { id: 1, title: 'First Steps', description: 'Completed first tutorial', icon: '🎯', unlocked: true },
     { id: 2, title: 'Quick Learner', description: 'Completed 5 tutorials', icon: '📚', unlocked: true },

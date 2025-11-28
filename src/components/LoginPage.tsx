@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import PublicNav from './PublicNav';
 import logo from 'figma:asset/bd00bd3a9f16cf036d031e12858b5516cf661d7f.png';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../hooks/useToast';
 
 interface LoginPageProps {
-  onLogin: (name: string) => void;
+  onLogin: () => void;
   onNavigate: (page: any) => void;
   isSignup: boolean;
   darkMode?: boolean;
@@ -18,14 +20,35 @@ export default function LoginPage({ onLogin, onNavigate, isSignup, darkMode = fa
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { signInWithEmail, signUpWithEmail, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const userName = isSignup ? name : email.split('@')[0];
-    onLogin(userName);
+    setIsLoading(true);
+    try {
+      if (isSignup) {
+        await signUpWithEmail(email, password, { full_name: name });
+        toast.success('Account created!', 'Please check your email to verify your account.');
+        onNavigate('login');
+      } else {
+        await signInWithEmail(email, password);
+        onLogin();
+      }
+    } catch (error: any) {
+      toast.error('Authentication failed', error.message || 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGoogleLogin = () => {
-    onLogin('User');
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      toast.error('Google login failed', error.message || 'An error occurred');
+    }
   };
 
   return (
@@ -149,9 +172,14 @@ export default function LoginPage({ onLogin, onNavigate, isSignup, darkMode = fa
 
             <button
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center"
+              disabled={isLoading}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isSignup ? 'Sign Up' : 'Sign In'}
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                isSignup ? 'Sign Up' : 'Sign In'
+              )}
             </button>
           </form>
 
