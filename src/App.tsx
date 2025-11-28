@@ -148,6 +148,22 @@ function App() {
     setUserName(name);
   };
 
+  // Handle Auth State Changes for Navigation
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        setCurrentPage('dashboard');
+        toast.success('Welcome back!');
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentPage('landing');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const renderPage = () => {
     switch (currentPage) {
       case 'landing':
