@@ -26,6 +26,16 @@ export default function LoginPage({ onLogin, onNavigate, isSignup, darkMode = fa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Password validation
+    if (isSignup) {
+      const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.{8,})/;
+      if (!passwordRegex.test(password)) {
+        toast.error('Weak Password', 'Password must be at least 8 characters long and contain at least one uppercase letter and one special character.');
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       if (isSignup) {
