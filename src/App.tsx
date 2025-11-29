@@ -43,30 +43,44 @@ function App() {
   });
   const { toasts, toast, removeToast } = useToast();
 
-  const handleLogin = () => {
-    setCurrentPage('dashboard');
-    toast.success('Login Successful!', `Welcome back!`);
-  };
+  // Fetch user profile when logged in
+  useEffect(() => {
+    if (user) {
+      const fetchProfile = async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('avatar_url, username')
+            .eq('id', user.id)
+            .single();
 
-  const handleProfileImageUpdate = (image: string | null) => {
-    setProfileImage(image);
-    try {
-      if (image) {
-        localStorage.setItem('vaani:profileImage', image);
-      } else {
-        localStorage.removeItem('vaani:profileImage');
-      }
-    } catch (e) {
-      // ignore localStorage errors
+          if (data) {
+            setUserName(data.username || user.email?.split('@')[0] || 'User');
+            setProfileImage(data.avatar_url);
+          } else {
+             // Fallback if no profile exists yet
+             setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User');
+             setProfileImage(user.user_metadata?.avatar_url || null);
+          }
+        } catch (e) {
+          console.error('Error fetching profile:', e);
+        }
+      };
+      fetchProfile();
+    } else {
+      setUserName('');
+      setProfileImage(null);
     }
-  };
+  }, [user]);
 
   const handleLogout = async () => {
-    await signOut();
-    setUserName('');
-    setProfileImage(null);
-    setCurrentPage('landing');
-    toast.info('Logged Out', 'You have been successfully logged out.');
+    try {
+      await signOut();
+      setCurrentPage('landing');
+      toast.info('Logged Out', 'You have been successfully logged out.');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const navigateTo = (page: Page) => {
@@ -115,35 +129,6 @@ function App() {
     }
   }, []);
 
-  // Load profile image and user data from Supabase
-  useEffect(() => {
-    if (user) {
-      setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User');
-      
-      const fetchProfile = async () => {
-        try {
-          const { data } = await supabase
-            .from('profiles')
-            .select('avatar_url, username')
-            .eq('id', user.id)
-            .single();
-            
-          if (data) {
-            if (data.username) setUserName(data.username);
-            if (data.avatar_url) setProfileImage(data.avatar_url);
-          }
-        } catch (e) {
-          console.error('Error fetching profile:', e);
-        }
-      };
-      
-      fetchProfile();
-    } else {
-      setUserName('');
-      setProfileImage(null);
-    }
-  }, [user]);
-
   const handleProfileNameUpdate = (name: string) => {
     setUserName(name);
   };
@@ -173,9 +158,9 @@ function App() {
       case 'pricing':
         return <PricingPage onNavigate={navigateTo} darkMode={darkMode} toggleDarkMode={toggleDarkMode} isLoggedIn={isLoggedIn} />;
       case 'login':
-        return <LoginPage onLogin={handleLogin} onNavigate={navigateTo} isSignup={false} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
+        return <LoginPage onLogin={() => {}} onNavigate={navigateTo} isSignup={false} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
       case 'signup':
-        return <LoginPage onLogin={handleLogin} onNavigate={navigateTo} isSignup={true} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
+        return <LoginPage onLogin={() => {}} onNavigate={navigateTo} isSignup={true} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
       case 'dashboard':
         return <Dashboard userName={userName} onNavigate={navigateTo} />;
       case 'interpreter':
@@ -189,7 +174,13 @@ function App() {
       case 'settings':
         return <SettingsPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
       case 'profile':
-        return <ProfilePage userName={userName} onNavigate={navigateTo} profileImage={profileImage} onProfileImageUpdate={handleProfileImageUpdate} onProfileNameUpdate={handleProfileNameUpdate} onLogout={handleLogout} />;
+        return <ProfilePage 
+          userName={userName} 
+          onNavigate={navigateTo} 
+          profileImage={profileImage} 
+          onProfileNameUpdate={handleProfileNameUpdate}
+          onLogout={handleLogout} 
+        />;
       case '404':
         return <NotFoundPage onNavigate={navigateTo} />;
       default:

@@ -1,11 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Edit, Mail, MapPin, Calendar, Award, TrendingUp, Target, X, Eye, EyeOff, Upload, Trash2, BookOpen, Settings, LogOut, Download, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '../hooks/useToast';
 import { useAnnouncer } from '../hooks/useAccessibility';
 import EmojiPicker from './EmojiPicker';
-import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../utils/supabase';
 
 interface ProfilePageProps {
   userName: string;
@@ -47,9 +47,9 @@ interface UserStats {
 }
 
 export default function ProfilePage({ userName, onNavigate, profileImage: initialProfileImage, onProfileImageUpdate, onProfileNameUpdate, onLogout }: ProfilePageProps) {
+  const { user } = useAuth();
   const { addToast } = useToast();
   const { announce } = useAnnouncer();
-  const { user } = useAuth();
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [displayName, setDisplayName] = useState(userName);
@@ -110,6 +110,13 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
   
   const [isSaving, setIsSaving] = useState(false);
 
+  // Sync state with props
+  useEffect(() => {
+    setDisplayName(userName);
+    setEditName(userName);
+    setProfileImage(initialProfileImage);
+  }, [userName, initialProfileImage]);
+
   // Validation functions
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -147,9 +154,10 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
     
     // Validate password if provided
     if (currentPassword || newPassword || confirmPassword) {
-      if (!currentPassword) {
-        newErrors.currentPassword = 'Current password is required to change password';
-      }
+      // For Supabase, we don't strictly need current password if logged in, but good practice
+      // if (!currentPassword) {
+      //   newErrors.currentPassword = 'Current password is required to change password';
+      // }
       
       if (newPassword) {
         const passwordValidation = validatePassword(newPassword);
@@ -180,18 +188,27 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
     try {
       if (!user) throw new Error('No user logged in');
 
-      const updates = {
+      // Update Profile Data
+      const updates: any = {
         id: user.id,
         username: editName,
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from('profiles').upsert(updates);
-      if (error) throw error;
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(updates);
 
-      if (newPassword) {
-        const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
-        if (pwError) throw pwError;
+      if (profileError) throw profileError;
+
+      // Update Email/Password if changed
+      if (editEmail !== user.email || newPassword) {
+        const authUpdates: any = {};
+        if (editEmail !== user.email) authUpdates.email = editEmail;
+        if (newPassword) authUpdates.password = newPassword;
+
+        const { error: authError } = await supabase.auth.updateUser(authUpdates);
+        if (authError) throw authError;
       }
       
       // Update displayed name and email
@@ -214,7 +231,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
       // Reset errors
       setErrors({});
     } catch (error: any) {
-      addToast('Failed to update profile. ' + (error.message || 'Please try again.'), 'error');
+      addToast('Failed to update profile: ' + (error.message || 'Unknown error'), 'error');
       announce('Profile update failed', 'assertive');
     } finally {
       setIsSaving(false);
@@ -260,28 +277,27 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
   };
 
   const handleRemoveImage = async () => {
-    if (user) {
-      try {
-        const { error } = await supabase
-          .from('profiles')
-          .upsert({
-            id: user.id,
-            avatar_url: null,
-            updated_at: new Date().toISOString(),
-          });
-          
-        if (error) throw error;
-        
-        setProfileImage(null);
-        setProfileEmoji('👤'); // Reset to default emoji when image is removed
-        onProfileImageUpdate?.(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        addToast('Profile image removed', 'info');
-      } catch (error: any) {
-        addToast('Error removing image', 'error');
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          avatar_url: null,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      setProfileImage(null);
+      setProfileEmoji('👤'); // Reset to default emoji when image is removed
+      onProfileImageUpdate?.(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
+      addToast('Profile image removed', 'info');
+    } catch (error: any) {
+      addToast('Error removing image: ' + error.message, 'error');
     }
   };
 
@@ -857,29 +873,21 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                     </div>
                   </div>
 
-                  {/* Buttons */}
-                  <div className="flex gap-3 pt-4">
+                  {/* Actions */}
+                  <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button
                       type="button"
                       onClick={() => setIsEditDialogOpen(false)}
-                      disabled={isSaving}
-                      className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={isSaving}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      {isSaving ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        'Save Changes'
-                      )}
+                      {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
                   </div>
                 </form>
