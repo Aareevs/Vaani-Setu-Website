@@ -337,8 +337,8 @@ export const aslSigns: { [key: string]: { description: string; imagePrompt: stri
     imagePrompt: "drinking+beverage+cup+glass+hand"
   },
   sleep: {
-    description: "Hand on cheek, head tilted, eyes closed",
-    imagePrompt: "sleeping+tired+rest+pillow+person"
+    description: "Open hand in front of face, move downward toward chin while closing into a fist",
+    imagePrompt: "sign+language+sleep+gesture+hand+closing+face"
   },
   work: {
     description: "Both fists, one on top of the other, hammering motion",

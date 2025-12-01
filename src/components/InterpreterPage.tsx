@@ -1,12 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
-import { Video, VideoOff, Volume2, VolumeX, AlertCircle, CheckCircle, Maximize, Minimize } from 'lucide-react';
+import { Video, VideoOff, Volume2, VolumeX, AlertCircle, CheckCircle, Maximize, Minimize, GraduationCap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import SignTeacher from './SignTeacher';
+import { supabase } from '../utils/supabase';
 
 // Types for MediaPipe HandLandmarker
 interface HandLandmark {
   x: number;
   y: number;
   z: number;
+}
+
+interface LearnedSign {
+  id: string;
+  name: string;
+  type: 'static' | 'dynamic';
+  data: any;
 }
 
 interface HandLandmarkerResult {
@@ -55,7 +64,38 @@ export default function InterpreterPage() {
   const goodStateRef = useRef<Record<number, { stage: 'none' | 'nearChin'; timer: number }>>({});
   const recentPhrasesRef = useRef<Array<{ text: string; time: number }>>([]);
   const speechStateRef = useRef<{ text: string; lastSpokenAt: number }>({ text: '', lastSpokenAt: 0 });
+  const [learnedSigns, setLearnedSigns] = useState<LearnedSign[]>([]);
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [showSignTeacher, setShowSignTeacher] = useState(false);
+  const learnedDynamicStatesRef = useRef<Record<string, Record<number, { stage: 'start' | 'end'; timer: number; startY: number }>>>({});
   
+  // Check for admin mode on mount
+  useEffect(() => {
+    const checkAdminMode = () => {
+      const isEnabled = localStorage.getItem('vaani_admin_mode') === 'true';
+      setIsAdminMode(isEnabled);
+    };
+    checkAdminMode();
+    // Listen for storage changes in case settings are updated in another tab
+    window.addEventListener('storage', checkAdminMode);
+    return () => window.removeEventListener('storage', checkAdminMode);
+  }, []);
+
+  // Fetch learned signs
+  useEffect(() => {
+    const fetchLearnedSigns = async () => {
+      const { data } = await supabase.from('learned_signs').select('*');
+      if (data) {
+        setLearnedSigns(data);
+        const dynamicSigns = data.filter((s: any) => s.type === 'dynamic');
+        dynamicSigns.forEach((s: any) => {
+          learnedDynamicStatesRef.current[s.name] = {};
+        });
+      }
+    };
+    fetchLearnedSigns();
+  }, []);
+
   // Constants
   const Y_MOVEMENT_THRESHOLD = 0.01;
   const STATE_TIMEOUT = 120;
@@ -1048,15 +1088,46 @@ export default function InterpreterPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl mb-2 text-gray-900 dark:text-white">Sign Language Interpreter</h1>
-          <p className="text-gray-600 dark:text-gray-400">Real-time AI-powered sign language detection and translation</p>
-        </motion.div>
+        <div className="flex justify-between items-start mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h1 className="text-3xl mb-2 text-gray-900 dark:text-white">Sign Language Interpreter</h1>
+            <p className="text-gray-600 dark:text-gray-400">Real-time AI-powered sign language detection and translation</p>
+          </motion.div>
+
+          {/* Teach Vaani Button - Only visible if Admin Mode is enabled in Settings */}
+          {isAdminMode && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={() => setShowSignTeacher(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105"
+            >
+              <GraduationCap className="w-5 h-5" />
+              <span className="font-medium">Teach Vaani</span>
+            </motion.button>
+          )}
+        </div>
+
+        {/* Sign Teacher Modal */}
+        <AnimatePresence>
+          {showSignTeacher && (
+            <SignTeacher 
+              onClose={() => setShowSignTeacher(false)} 
+              onSignSaved={() => {
+                const fetchLearnedSigns = async () => {
+                  const { data } = await supabase.from('learned_signs').select('*');
+                  if (data) setLearnedSigns(data);
+                };
+                fetchLearnedSigns();
+              }}
+              handLandmarker={handLandmarkerRef.current}
+            />
+          )}
+        </AnimatePresence>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Camera Feed Section */}

@@ -42,7 +42,7 @@ export default function PricingPage({ onNavigate, darkMode = false, toggleDarkMo
     },
     {
       name: 'Pro',
-      price: '$20',
+      price: '$29',
       period: 'per month',
       icon: Zap,
       color: 'from-blue-500 to-purple-500',
