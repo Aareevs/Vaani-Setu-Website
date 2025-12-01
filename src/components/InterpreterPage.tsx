@@ -839,6 +839,12 @@ export default function InterpreterPage() {
     if (!cameraActive || !handLandmarker || !video) {
       return;
     }
+
+    // Pause detection if Sign Teacher is open to avoid MediaPipe conflicts
+    if (showSignTeacher) {
+      animationFrameRef.current = requestAnimationFrame(predictWebcam);
+      return;
+    }
     
     if (video.readyState !== 4) {
       animationFrameRef.current = requestAnimationFrame(predictWebcam);
