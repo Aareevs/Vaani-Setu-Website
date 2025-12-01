@@ -26,12 +26,13 @@ export default function LoginPage({ onLogin, onNavigate, isSignup, darkMode = fa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted', { isSignup, email, name });
     
     // Password validation
     if (isSignup) {
-      const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.{8,})/;
-      if (!passwordRegex.test(password)) {
-        toast.error('Weak Password', 'Password must be at least 8 characters long and contain at least one uppercase letter and one special character.');
+      if (password.length < 6) {
+        console.log('Password validation failed: too short');
+        toast.error('Weak Password', 'Password must be at least 6 characters long.');
         return;
       }
     }
@@ -39,15 +40,24 @@ export default function LoginPage({ onLogin, onNavigate, isSignup, darkMode = fa
     setIsLoading(true);
     try {
       if (isSignup) {
+        console.log('Attempting signup...');
         await signUpWithEmail(email, password, { full_name: name });
+        console.log('Signup successful');
         toast.success('Account created!', 'Please check your email to verify your account.');
         onNavigate('login');
       } else {
+        console.log('Attempting login...');
         await signInWithEmail(email, password);
+        console.log('Login successful');
         onLogin();
       }
     } catch (error: any) {
-      toast.error('Authentication failed', error.message || 'An error occurred');
+      console.error('Auth error:', error);
+      if (error.message.includes('Email not confirmed')) {
+        toast.error('Email Verification Required', 'Please check your email inbox (and spam) to verify your account before logging in.');
+      } else {
+        toast.error('Authentication failed', error.message || 'An error occurred');
+      }
     } finally {
       setIsLoading(false);
     }

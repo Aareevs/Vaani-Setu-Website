@@ -58,13 +58,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUpWithEmail = async (email: string, password: string, data: { full_name: string }) => {
-    const { error } = await supabase.auth.signUp({
+    console.log('AuthContext: signUpWithEmail called', { email, data });
+    const { data: authData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data,
       },
     });
+    console.log('AuthContext: Supabase response', { authData, error });
     if (error) throw error;
   };
 

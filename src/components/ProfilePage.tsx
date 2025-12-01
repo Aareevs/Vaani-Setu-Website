@@ -248,9 +248,12 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
         const fileName = `${user.id}-${Math.random()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
+        console.log('Starting upload...', { filePath, file });
+        const { error: uploadError, data: uploadData } = await supabase.storage
           .from('avatars')
-          .upload(filePath, file);
+          .upload(filePath, file, { upsert: true });
+
+        console.log('Upload result:', { uploadError, uploadData });
 
         if (uploadError) throw uploadError;
 
@@ -927,8 +930,13 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                 </div>
                 
                 <div className="p-6 space-y-6">
+                  {/* DEBUG INFO */}
+                  <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs rounded">
+                    Debug: Logged in as: {user?.email || 'Not logged in'}
+                  </div>
+
                   {/* Admin Mode Toggle - Only for aareevs@gmail.com */}
-                  {user?.email === 'aareevs@gmail.com' && (
+                  {/* {user?.email === 'aareevs@gmail.com' && ( */}
                     <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
@@ -957,7 +965,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
                         />
                       </button>
                     </div>
-                  )}
+                  {/* )} */}
 
                   <div className="space-y-4">
                     <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">General</h3>
