@@ -11,6 +11,11 @@ interface SignTeacherProps {
 
 export default function SignTeacher({ onClose, onSignSaved, handLandmarker }: SignTeacherProps) {
   const { addToast } = useToast();
+  
+  useEffect(() => {
+    console.log("SignTeacher mounted. HandLandmarker:", handLandmarker ? "Present" : "Missing");
+  }, [handLandmarker]);
+
   const [signName, setSignName] = useState('');
   const [signType, setSignType] = useState<'static' | 'dynamic'>('static');
   const [isRecording, setIsRecording] = useState(false);
@@ -20,7 +25,7 @@ export default function SignTeacher({ onClose, onSignSaved, handLandmarker }: Si
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number | null>(null);
   const recordingBufferRef = useRef<any[]>([]);
 
   // Initialize Camera
@@ -61,29 +66,35 @@ export default function SignTeacher({ onClose, onSignSaved, handLandmarker }: Si
         if (video.readyState === 4 && ctx) {
           // Detect landmarks
           const startTimeMs = performance.now();
-          const results = handLandmarker.detectForVideo(video, startTimeMs);
+          try {
+            const results = handLandmarker.detectForVideo(video, startTimeMs);
+            // console.log('SignTeacher: Detection results', results); // Too noisy for loop
 
-          // Draw preview
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
-          if (results.landmarks && results.landmarks.length > 0) {
-            setPreviewLandmarks(results.landmarks[0]); // Store for capture
+            // Draw preview
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Draw skeleton
-            const landmarks = results.landmarks[0];
-            for (const landmark of landmarks) {
-              ctx.beginPath();
-              ctx.arc(landmark.x * canvas.width, landmark.y * canvas.height, 5, 0, 2 * Math.PI);
-              ctx.fillStyle = "#00FF00";
-              ctx.fill();
+            if (results.landmarks && results.landmarks.length > 0) {
+              // console.log('SignTeacher: Landmarks detected');
+              setPreviewLandmarks(results.landmarks[0]); // Store for capture
+              
+              // Draw skeleton
+              const landmarks = results.landmarks[0];
+              for (const landmark of landmarks) {
+                ctx.beginPath();
+                ctx.arc(landmark.x * canvas.width, landmark.y * canvas.height, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = "#00FF00";
+                ctx.fill();
+              }
+              
+              // If recording dynamic sign, push to buffer
+              if (isRecording) {
+                recordingBufferRef.current.push(landmarks);
+              }
+            } else {
+              setPreviewLandmarks([]);
             }
-            
-            // If recording dynamic sign, push to buffer
-            if (isRecording) {
-              recordingBufferRef.current.push(landmarks);
-            }
-          } else {
-            setPreviewLandmarks([]);
+          } catch (e) {
+            console.error("SignTeacher: Detection error", e);
           }
         }
       }
@@ -191,8 +202,8 @@ export default function SignTeacher({ onClose, onSignSaved, handLandmarker }: Si
       onSignSaved();
       onClose();
     } catch (error: any) {
-      console.error("Save error:", error);
-      addToast("Failed to save sign: " + error.message, "error");
+      console.error("Save error details:", error);
+      addToast("Failed to save sign: " + (error.message || JSON.stringify(error)), "error");
     }
   };
 

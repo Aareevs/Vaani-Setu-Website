@@ -26,7 +26,19 @@ type Page = 'landing' | 'about' | 'pricing' | 'login' | 'signup' | 'dashboard' |
 
 function App() {
   const { user, signOut } = useAuth();
-  const [currentPage, setCurrentPage] = useState<Page>('landing');
+  const [currentPage, setCurrentPage] = useState<Page>(() => {
+    // Try to restore page from localStorage
+    try {
+      const stored = localStorage.getItem('vaani:currentPage');
+      // Validate that stored value is a valid page
+      if (stored && ['landing', 'about', 'pricing', 'login', 'signup', 'dashboard', 'interpreter', 'community', 'community-all', 'tutorials', 'settings', 'profile', '404'].includes(stored)) {
+        return stored as Page;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return 'landing';
+  });
   const isLoggedIn = !!user;
   const [userName, setUserName] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -85,6 +97,11 @@ function App() {
 
   const navigateTo = (page: Page) => {
     setCurrentPage(page);
+    try {
+      localStorage.setItem('vaani:currentPage', page);
+    } catch (e) {
+      // ignore
+    }
     // Scroll to top when navigating
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -137,10 +154,19 @@ function App() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN') {
-        setCurrentPage('dashboard');
+        // Only redirect to dashboard if we are on a public page (landing, login, signup)
+        // Otherwise, stay on the current page (e.g. interpreter)
+        setCurrentPage((prev) => {
+          if (['landing', 'login', 'signup'].includes(prev)) {
+            localStorage.setItem('vaani:currentPage', 'dashboard');
+            return 'dashboard';
+          }
+          return prev;
+        });
         toast.success('Welcome back!');
       } else if (event === 'SIGNED_OUT') {
         setCurrentPage('landing');
+        localStorage.setItem('vaani:currentPage', 'landing');
       }
     });
 
