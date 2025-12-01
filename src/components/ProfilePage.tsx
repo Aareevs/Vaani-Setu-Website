@@ -52,8 +52,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
   const { announce } = useAnnouncer();
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
-  const [isAdminMode, setIsAdminMode] = useState(() => localStorage.getItem('vaani_admin_mode') === 'true');
+
   const [displayName, setDisplayName] = useState(userName);
   const [displayEmail, setDisplayEmail] = useState(user?.email || '');
   const [editName, setEditName] = useState(userName);
@@ -620,8 +619,9 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
               <h3 className="text-lg mb-4 text-gray-900 dark:text-white">Quick Actions</h3>
               <div className="space-y-3">
                 <button
-                  onClick={() => setIsSettingsDialogOpen(true)}
-                  className="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                  onClick={() => onNavigate('settings')}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                  aria-label="Settings"
                 >
                   <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   <span className="text-gray-900 dark:text-white">Settings</span>
@@ -901,89 +901,7 @@ export default function ProfilePage({ userName, onNavigate, profileImage: initia
           </>
         )}
       </AnimatePresence>
-      {/* Settings Dialog */}
-      <AnimatePresence>
-        {isSettingsDialogOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsSettingsDialogOpen(false)}
-              className="fixed inset-0 bg-black/50 z-50"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            >
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h2>
-                  <button
-                    onClick={() => setIsSettingsDialogOpen(false)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  </button>
-                </div>
-                
-                <div className="p-6 space-y-6">
-                  {/* DEBUG INFO */}
-                  <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs rounded">
-                    Debug: Logged in as: {user?.email || 'Not logged in'}
-                  </div>
 
-                  {/* Admin Mode Toggle - Only for aareevs@gmail.com */}
-                  {/* {user?.email === 'aareevs@gmail.com' && ( */}
-                    <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
-                          <Award className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-gray-900 dark:text-white">Admin Mode</h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Enable teaching tools</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const newValue = !isAdminMode;
-                          setIsAdminMode(newValue);
-                          localStorage.setItem('vaani_admin_mode', String(newValue));
-                          addToast(newValue ? 'Admin Mode Enabled' : 'Admin Mode Disabled', 'success');
-                        }}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                          isAdminMode ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-700'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            isAdminMode ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  {/* )} */}
-
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">General</h3>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700 dark:text-gray-300">Dark Mode</span>
-                      <span className="text-xs text-gray-500">Auto</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700 dark:text-gray-300">Notifications</span>
-                      <span className="text-xs text-gray-500">On</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

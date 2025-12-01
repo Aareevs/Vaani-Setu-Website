@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Globe, Bell, Lock, Palette, Type, Eye, Volume2, Save } from 'lucide-react';
+import { Globe, Bell, Lock, Palette, Eye, Volume2, Save } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Slider } from './ui/slider';
+import { useAuth } from '../context/AuthContext';
 
 // Settings type definitions to properly narrow union usage in render logic
 type SettingType = 'switch' | 'select' | 'slider';
@@ -44,8 +45,12 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ darkMode, toggleDarkMode }: SettingsPageProps) {
+  const { user } = useAuth();
   const [fontSize, setFontSize] = useState(100);
   const [speechSpeed, setSpeechSpeed] = useState(50);
+  const [isAdminMode, setIsAdminMode] = useState(() => {
+    return localStorage.getItem('vaani_admin_mode') === 'true';
+  });
 
   useEffect(() => {
     // Apply font size to the root element
@@ -174,6 +179,20 @@ export default function SettingsPage({ darkMode, toggleDarkMode }: SettingsPageP
           description: 'Help improve the app by sharing usage data',
           type: 'switch',
         },
+        // Admin Mode - Only for aareevs@gmail.com
+        ...(user?.email === 'aareevs@gmail.com' ? [{
+          id: 'adminMode',
+          label: 'Admin Mode',
+          description: 'Enable teaching tools and advanced features',
+          type: 'switch' as const,
+          value: isAdminMode,
+          onChange: (checked: boolean) => {
+            setIsAdminMode(checked);
+            localStorage.setItem('vaani_admin_mode', String(checked));
+            // Dispatch event for other components to react
+            window.dispatchEvent(new Event('storage'));
+          },
+        }] : []),
       ],
     },
   ];
