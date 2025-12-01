@@ -11,12 +11,7 @@ interface HandLandmark {
   z: number;
 }
 
-interface LearnedSign {
-  id: string;
-  name: string;
-  type: 'static' | 'dynamic';
-  data: any;
-}
+
 
 interface HandLandmarkerResult {
   landmarks: HandLandmark[][];
@@ -25,6 +20,14 @@ interface HandLandmarkerResult {
 
 interface HandLandmarker {
   detectForVideo(video: HTMLVideoElement, timestamp: number): HandLandmarkerResult;
+}
+
+interface FaceLandmarker {
+  detectForVideo(video: HTMLVideoElement, timestamp: number): any;
+}
+
+interface PoseLandmarker {
+  detectForVideo(video: HTMLVideoElement, timestamp: number): any;
 }
 
 
@@ -44,8 +47,9 @@ export default function InterpreterPage() {
   
   // MediaPipe HandLandmarker refs
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
-  const faceLandmarkerRef = useRef<any | null>(null);
-  const poseLandmarkerRef = useRef<any | null>(null);
+  const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
+  const poseLandmarkerRef = useRef<PoseLandmarker | null>(null);
+  const lastLandmarksRef = useRef<HandLandmarkerResult | null>(null); // Shared landmarks for Teach Vaani
   const lastVideoTimeRef = useRef<number>(-1);
   const animationFrameRef = useRef<number | null>(null);
   
@@ -64,7 +68,6 @@ export default function InterpreterPage() {
   const goodStateRef = useRef<Record<number, { stage: 'none' | 'nearChin'; timer: number }>>({});
   const recentPhrasesRef = useRef<Array<{ text: string; time: number }>>([]);
   const speechStateRef = useRef<{ text: string; lastSpokenAt: number }>({ text: '', lastSpokenAt: 0 });
-  const [learnedSigns, setLearnedSigns] = useState<LearnedSign[]>([]);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showSignTeacher, setShowSignTeacher] = useState(false);
   const learnedDynamicStatesRef = useRef<Record<string, Record<number, { stage: 'start' | 'end'; timer: number; startY: number }>>>({});
@@ -86,7 +89,7 @@ export default function InterpreterPage() {
     const fetchLearnedSigns = async () => {
       const { data } = await supabase.from('learned_signs').select('*');
       if (data) {
-        setLearnedSigns(data);
+        // setLearnedSigns(data); // Removed as state is unused
         const dynamicSigns = data.filter((s: any) => s.type === 'dynamic');
         dynamicSigns.forEach((s: any) => {
           learnedDynamicStatesRef.current[s.name] = {};
@@ -342,6 +345,9 @@ export default function InterpreterPage() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     let detectedSigns: string[] = [];
+    
+    // Update shared landmarks ref
+    lastLandmarksRef.current = results;
     
     if (results.landmarks && results.landmarks.length > 0) {
       // Store current hand positions for two-hand gesture detection
@@ -839,12 +845,6 @@ export default function InterpreterPage() {
     if (!cameraActive || !handLandmarker || !video) {
       return;
     }
-
-    // Pause detection if Sign Teacher is open to avoid MediaPipe conflicts
-    if (showSignTeacher) {
-      animationFrameRef.current = requestAnimationFrame(predictWebcam);
-      return;
-    }
     
     if (video.readyState !== 4) {
       animationFrameRef.current = requestAnimationFrame(predictWebcam);
@@ -1124,13 +1124,11 @@ export default function InterpreterPage() {
             <SignTeacher 
               onClose={() => setShowSignTeacher(false)} 
               onSignSaved={() => {
-                const fetchLearnedSigns = async () => {
-                  const { data } = await supabase.from('learned_signs').select('*');
-                  if (data) setLearnedSigns(data);
-                };
-                fetchLearnedSigns();
+                // Refresh logic to be implemented when recognition is added
               }}
               handLandmarker={handLandmarkerRef.current}
+              lastLandmarksRef={lastLandmarksRef}
+              stream={videoRef.current?.srcObject as MediaStream}
             />
           )}
         </AnimatePresence>

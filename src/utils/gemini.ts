@@ -8,7 +8,7 @@ export const getGeminiResponse = async (prompt: string) => {
     if (!genAI) {
       return "🔑 API key error: Please set the VITE_GEMINI_API_KEY environment variable.";
     }
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();

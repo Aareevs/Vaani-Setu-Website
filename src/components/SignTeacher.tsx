@@ -1,21 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Video, Square, Save, X, Play } from 'lucide-react';
+import { Camera, Video, Square, Save, X } from 'lucide-react';
 import { supabase } from '../utils/supabase';
 import { useToast } from '../hooks/useToast';
 
 interface SignTeacherProps {
   onClose: () => void;
   onSignSaved: () => void;
-  handLandmarker: any; // Pass the MediaPipe landmarker instance
+  lastLandmarksRef: React.MutableRefObject<any>; // Using any for HandLandmarkerResult to avoid import issues
+  stream: MediaStream;
+  handLandmarker?: any; // kept for compatibility but unused
 }
 
-export default function SignTeacher({ onClose, onSignSaved, handLandmarker }: SignTeacherProps) {
+export default function SignTeacher({ onClose, onSignSaved, lastLandmarksRef, stream }: SignTeacherProps) {
   const { addToast } = useToast();
-  
-  useEffect(() => {
-    console.log("SignTeacher mounted. HandLandmarker:", handLandmarker ? "Present" : "Missing");
-  }, [handLandmarker]);
-
   const [signName, setSignName] = useState('');
   const [signType, setSignType] = useState<'static' | 'dynamic'>('static');
   const [isRecording, setIsRecording] = useState(false);
@@ -28,81 +25,57 @@ export default function SignTeacher({ onClose, onSignSaved, handLandmarker }: Si
   const requestRef = useRef<number | null>(null);
   const recordingBufferRef = useRef<any[]>([]);
 
-  // Initialize Camera
+  // Initialize Video from Stream
   useEffect(() => {
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  // Drawing Loop (uses shared landmarks)
+  useEffect(() => {
+    const draw = () => {
+      if (canvasRef.current && lastLandmarksRef.current) {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const results = lastLandmarksRef.current;
+
+        if (ctx) {
+          // Clear canvas
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          if (results.landmarks && results.landmarks.length > 0) {
+            const landmarks = results.landmarks[0];
+            setPreviewLandmarks(landmarks); // Store for capture
+            
+            // Draw skeleton
+            for (const landmark of landmarks) {
+              ctx.beginPath();
+              ctx.arc(landmark.x * canvas.width, landmark.y * canvas.height, 5, 0, 2 * Math.PI);
+              ctx.fillStyle = "#00FF00";
+              ctx.fill();
+            }
+            
+            // If recording dynamic sign, push to buffer
+            if (isRecording) {
+              recordingBufferRef.current.push(landmarks);
+            }
+          } else {
+            setPreviewLandmarks([]);
+          }
         }
-      } catch (err) {
-        console.error("Error accessing camera:", err);
-        addToast("Could not access camera", "error");
       }
+      requestRef.current = requestAnimationFrame(draw);
     };
 
-    startCamera();
-
+    requestRef.current = requestAnimationFrame(draw);
+    
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(track => track.stop());
-      }
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
     };
-  }, []);
-
-  // Prediction Loop for Preview
-  useEffect(() => {
-    const predict = () => {
-      if (videoRef.current && canvasRef.current && handLandmarker) {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-
-        if (video.readyState === 4 && ctx) {
-          // Detect landmarks
-          const startTimeMs = performance.now();
-          try {
-            const results = handLandmarker.detectForVideo(video, startTimeMs);
-            // console.log('SignTeacher: Detection results', results); // Too noisy for loop
-
-            // Draw preview
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            if (results.landmarks && results.landmarks.length > 0) {
-              // console.log('SignTeacher: Landmarks detected');
-              setPreviewLandmarks(results.landmarks[0]); // Store for capture
-              
-              // Draw skeleton
-              const landmarks = results.landmarks[0];
-              for (const landmark of landmarks) {
-                ctx.beginPath();
-                ctx.arc(landmark.x * canvas.width, landmark.y * canvas.height, 5, 0, 2 * Math.PI);
-                ctx.fillStyle = "#00FF00";
-                ctx.fill();
-              }
-              
-              // If recording dynamic sign, push to buffer
-              if (isRecording) {
-                recordingBufferRef.current.push(landmarks);
-              }
-            } else {
-              setPreviewLandmarks([]);
-            }
-          } catch (e) {
-            console.error("SignTeacher: Detection error", e);
-          }
-        }
-      }
-      requestRef.current = requestAnimationFrame(predict);
-    };
-
-    requestRef.current = requestAnimationFrame(predict);
-  }, [handLandmarker, isRecording]);
+  }, [isRecording, lastLandmarksRef]);
 
   const handleCaptureStatic = () => {
     if (previewLandmarks.length === 0) {
@@ -202,8 +175,8 @@ export default function SignTeacher({ onClose, onSignSaved, handLandmarker }: Si
       onSignSaved();
       onClose();
     } catch (error: any) {
-      console.error("Save error details:", error);
-      addToast("Failed to save sign: " + (error.message || JSON.stringify(error)), "error");
+      console.error("Save error:", error);
+      addToast("Failed to save sign: " + error.message, "error");
     }
   };
 
