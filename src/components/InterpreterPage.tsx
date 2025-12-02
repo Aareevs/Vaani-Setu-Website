@@ -400,11 +400,23 @@ export default function InterpreterPage() {
       for (let i = 0; i < results.landmarks.length; i++) {
         // Filter out low confidence hands (ghost hands)
         const handedness = results.handednesses?.[i] as any;
-        if (handedness && handedness[0] && handedness[0].score < 0.7) {
+        
+        // 1. Check Confidence
+        if (!handedness || !handedness[0] || handedness[0].score < 0.7) {
            continue;
         }
 
         const landmarks = results.landmarks[i];
+        
+        // 2. Check Hand Size (Ghost hands are often tiny/bunched up)
+        const xValues = landmarks.map(l => l.x);
+        const yValues = landmarks.map(l => l.y);
+        const width = Math.max(...xValues) - Math.min(...xValues);
+        const height = Math.max(...yValues) - Math.min(...yValues);
+        
+        if (width < 0.05 || height < 0.05) {
+          continue; // Ignore tiny hands
+        }
         const scaleX = canvas.width;
         const scaleY = canvas.height;
         
