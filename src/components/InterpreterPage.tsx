@@ -213,6 +213,31 @@ export default function InterpreterPage() {
     if (isIndexUp && isMiddleUp && isRingDown && isPinkyDown && !isThumbUp) {
       return "Two Fingers Up";
     }
+
+    // 7. Eat Sign (All finger tips touching thumb tip)
+    const thumbTip = landmarks[4];
+    const middleTip = landmarks[12];
+    const ringTip = landmarks[16];
+    const pinkyTip = landmarks[20];
+
+    const getDist = (p1: HandLandmark, p2: HandLandmark) => {
+      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2) + Math.pow(p1.z - p2.z, 2));
+    };
+
+    const distThumbIndex = getDist(thumbTip, landmarks[8]);
+    const distThumbMiddle = getDist(thumbTip, middleTip);
+    const distThumbRing = getDist(thumbTip, ringTip);
+    const distThumbPinky = getDist(thumbTip, pinkyTip);
+
+    // Threshold for "touching"
+    const TOUCH_THRESHOLD = 0.06; 
+
+    if (distThumbIndex < TOUCH_THRESHOLD && 
+        distThumbMiddle < TOUCH_THRESHOLD && 
+        distThumbRing < TOUCH_THRESHOLD && 
+        distThumbPinky < TOUCH_THRESHOLD) {
+      return "Eat";
+    }
     
     // Default Fallback
     return "Hand Detected - Unknown Sign";
