@@ -393,50 +393,75 @@ export default function InterpreterPage() {
     lastLandmarksRef.current = results;
     
     if (results.landmarks && results.landmarks.length > 0) {
-      // Store current hand positions for two-hand gesture detection
-      const currentHandPositions: Array<{ x: number; y: number; sign: string; landmarks: HandLandmark[] }> = [];
-      
-      // Loop through each detected hand
-      for (let i = 0; i < results.landmarks.length; i++) {
-        // Filter out low confidence hands (ghost hands)
-        const handedness = results.handednesses?.[i] as any;
-        
-        // 1. Check Confidence
-        if (!handedness || !handedness[0] || handedness[0].score < 0.7) {
-           continue;
-        }
+      // 1. COLLECT VALID HANDS
+      const validHands: Array<{
+        landmarks: HandLandmark[];
+        score: number;
+        handedness: any;
+        index: number;
+      }> = [];
 
+      for (let i = 0; i < results.landmarks.length; i++) {
         const landmarks = results.landmarks[i];
-        
-        // 2. Check Hand Size (Ghost hands are often tiny/bunched up)
+        const handedness = results.handednesses?.[i] as any;
+        const score = handedness?.[0]?.score || 0;
+
+        // Filter 1: Strict Confidence
+        if (score < 0.7) continue;
+
+        // Filter 2: Size Check (Ignore tiny noise)
         const xValues = landmarks.map(l => l.x);
         const yValues = landmarks.map(l => l.y);
         const width = Math.max(...xValues) - Math.min(...xValues);
         const height = Math.max(...yValues) - Math.min(...yValues);
-        
-        if (width < 0.05 || height < 0.05) {
-          continue; // Ignore tiny hands
-        }
+        if (width < 0.05 || height < 0.05) continue;
 
-        // 3. Check Overlap (Duplicate Detection)
-        // If this is the second hand, check if it's too close to the first one
-        if (i > 0) {
-          const prevLandmarks = results.landmarks[0];
-          const prevX = prevLandmarks.map(l => l.x).reduce((a, b) => a + b) / prevLandmarks.length;
-          const prevY = prevLandmarks.map(l => l.y).reduce((a, b) => a + b) / prevLandmarks.length;
+        validHands.push({ landmarks, score, handedness, index: i });
+      }
+
+      // 2. DEDUPLICATE (Greedy Non-Maximum Suppression)
+      // Sort by score descending
+      validHands.sort((a, b) => b.score - a.score);
+
+      const finalHands: typeof validHands = [];
+      for (const hand of validHands) {
+        let isDuplicate = false;
+        const handCenter = {
+          x: hand.landmarks.reduce((sum, l) => sum + l.x, 0) / hand.landmarks.length,
+          y: hand.landmarks.reduce((sum, l) => sum + l.y, 0) / hand.landmarks.length
+        };
+
+        for (const keptHand of finalHands) {
+          const keptCenter = {
+            x: keptHand.landmarks.reduce((sum, l) => sum + l.x, 0) / keptHand.landmarks.length,
+            y: keptHand.landmarks.reduce((sum, l) => sum + l.y, 0) / keptHand.landmarks.length
+          };
+          const dist = Math.sqrt(Math.pow(handCenter.x - keptCenter.x, 2) + Math.pow(handCenter.y - keptCenter.y, 2));
           
-          const currX = xValues.reduce((a, b) => a + b) / xValues.length;
-          const currY = yValues.reduce((a, b) => a + b) / yValues.length;
-          
-          const dist = Math.sqrt(Math.pow(currX - prevX, 2) + Math.pow(currY - prevY, 2));
-          if (dist < 0.1) {
-            continue; // Ignore duplicate hand
+          // Overlap Threshold
+          if (dist < 0.15) {
+            isDuplicate = true;
+            break;
           }
         }
+
+        if (!isDuplicate) {
+          finalHands.push(hand);
+        }
+      }
+
+      // 3. PROCESS FINAL HANDS
+      // Store current hand positions for two-hand gesture detection
+      const currentHandPositions: Array<{ x: number; y: number; sign: string; landmarks: HandLandmark[] }> = [];
+
+      for (let i = 0; i < finalHands.length; i++) {
+        const { landmarks } = finalHands[i];
+        // We use 'i' as the index for detectedSigns to match UI "Hand 1", "Hand 2"
+        
         const scaleX = canvas.width;
         const scaleY = canvas.height;
         
-        // 1. Draw connections
+        // Draw connections
         ctx.strokeStyle = '#3b82f6';
         ctx.lineWidth = 3;
         for (const connection of LANDMARK_CONNECTIONS) {
@@ -448,48 +473,105 @@ export default function InterpreterPage() {
           ctx.stroke();
         }
         
-        // 2. Draw landmarks
+        // Draw landmarks
         ctx.fillStyle = '#ef4444';
-        for (let j = 0; j < landmarks.length; j++) {
-          const landmark = landmarks[j];
-          ctx.beginPath();
-          ctx.arc(landmark.x * scaleX, landmark.y * scaleY, 5, 0, 2 * Math.PI);
-          ctx.fill();
-          
-          if ([4, 8, 12, 16, 20].includes(j)) {
+        for (const landmark of landmarks) {
+          // Draw only key points (tips and bases) to reduce clutter
+          if ([0, 4, 8, 12, 16, 20].includes(landmarks.indexOf(landmark))) {
+            ctx.beginPath();
+            ctx.arc(landmark.x * scaleX, landmark.y * scaleY, 6, 0, 2 * Math.PI);
+            ctx.fill();
+          } else {
             ctx.fillStyle = '#10b981';
             ctx.beginPath();
-            ctx.arc(landmark.x * scaleX, landmark.y * scaleY, 8, 0, 2 * Math.PI);
+            ctx.arc(landmark.x * scaleX, landmark.y * scaleY, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#ef4444';
           }
         }
         
-        // 3. Detect Sign
+        // Detect Sign
         const staticSign = detectStaticSign(
           landmarks, 
           faceResults && faceResults.faceLandmarks ? faceResults.faceLandmarks[0] : undefined
         );
         detectedSigns.push(staticSign);
+        
         const wrist = landmarks[0];
         
         // Store hand position for two-hand detection
-        currentHandPositions.push({
-          x: wrist.x,
-          y: wrist.y,
-          sign: staticSign,
-          landmarks: landmarks
-        });
+        currentHandPositions.push({ x: wrist.x, y: wrist.y, sign: staticSign, landmarks });
         
-        // Track single-hand dynamic gestures
-        const finalSign = trackDynamicGestures(staticSign, landmarks, i);
-        detectedSigns.push(finalSign);
+        // Track dynamic gestures
+        const dynamicSign = trackDynamicGestures(staticSign, landmarks, i);
+        if (dynamicSign !== staticSign) {
+          detectedSigns[i] = dynamicSign;
+        }
         
-        // Update last position for this hand
-        lastHandYRef.current[i] = landmarks[0].y;
-        lastHandXRef.current[i] = landmarks[0].x;
-      }
+        // Update history for smoothing
+        if (!handPositionsRef.current[i]) handPositionsRef.current[i] = { x: 0, y: 0, sign: "" };
+        handPositionsRef.current[i] = { x: wrist.x, y: wrist.y, sign: detectedSigns[i] };
+        
+        // Speak the sign if it's new and valid
+        const signToSpeak = detectedSigns[i];
+        if (signToSpeak && 
+            signToSpeak !== "Hand Detected - Unknown Sign" && 
+            signToSpeak !== "Low Confidence" &&
+            !signToSpeak.includes("moving...") &&
+            !signToSpeak.includes("slapping...") &&
+            signToSpeak !== speechStateRef.current.text) {
+              
+          // Debounce: Don't speak if same sign was spoken recently (though check above handles change)
+          // But if it switches A -> B -> A quickly, we might want to allow it.
+          // The user said "only says that out loud once", implying once per detection event.
+          
+          window.speechSynthesis.cancel(); // Stop previous speech
+          const utterance = new SpeechSynthesisUtterance(signToSpeak);
+          utterance.rate = 1.0;
+          window.speechSynthesis.speak(utterance);
+          
+          speechStateRef.current = { text: signToSpeak, lastSpokenAt: Date.now() };
+        } else if (!signToSpeak || signToSpeak === "Hand Detected - Unknown Sign") {
+           // Reset speech state if hand is lost or unknown, so it can speak again if re-detected?
+           // Or should we keep the last spoken text to prevent "Hello" -> "Unknown" -> "Hello" loop?
+           // User said "whenever it detects a proper hand sign it only says that out loud once".
+           // If I drop my hand and raise it again, it should probably speak again.
+           // So if sign is unknown/lost, we might want to clear the state after a delay?
+           // For now, let's strictly follow "once per detection instance".
+           // If I switch signs, it speaks. If I hold it, it doesn't repeat.
+        }
+
+        // --- Multi-Hand Logic (Mother/Father/etc) ---
+        if (faceResults && faceResults.faceLandmarks && faceResults.faceLandmarks.length > 0) {
+           const face = faceResults.faceLandmarks[0];
+           const chin = face[152];
+           const forehead = face[10];
+           const thumbTip = landmarks[4];
+           
+           const dMother = Math.sqrt(Math.pow(thumbTip.x - chin.x, 2) + Math.pow(thumbTip.y - chin.y, 2));
+           const dFather = Math.sqrt(Math.pow(thumbTip.x - forehead.x, 2) + Math.pow(thumbTip.y - forehead.y, 2));
+           
+           if (!motherHoldRef.current[i]) motherHoldRef.current[i] = 0;
+           if (!fatherHoldRef.current[i]) fatherHoldRef.current[i] = 0;
+
+           if (dMother < 0.06 && detectedSigns[i] !== "Eat") {
+             motherHoldRef.current[i]++;
+             if (motherHoldRef.current[i] > 6) detectedSigns[i] = "Mother";
+           } else {
+             motherHoldRef.current[i] = 0;
+           }
+
+           if (dFather < 0.06 && detectedSigns[i] !== "Eat") {
+             fatherHoldRef.current[i]++;
+             if (fatherHoldRef.current[i] > 6) detectedSigns[i] = "Father";
+           } else {
+             fatherHoldRef.current[i] = 0;
+           }
+        }
+      } // End of finalHands loop
       
-      // 4. Check for two-hand "Stop" gesture (one hand slapping onto other palm)
-      if (results.landmarks.length === 2 && currentHandPositions.length === 2) {
+      // Two-hand logic (Morning/Night) needs to check if we have 2 hands
+      if (finalHands.length === 2 && poseResults && poseResults.poseLandmarks && poseResults.poseLandmarks.length > 0) {
         const hand0 = currentHandPositions[0];
         const hand1 = currentHandPositions[1];
         
@@ -528,8 +610,8 @@ export default function InterpreterPage() {
           }
         }
 
-        const index0 = results.landmarks[0][8];
-        const index1 = results.landmarks[1][8];
+        const index0 = finalHands[0].landmarks[8];
+        const index1 = finalHands[1].landmarks[8];
         const distIndex = Math.sqrt(
           Math.pow((index0.x - index1.x) * canvas.width, 2) +
           Math.pow((index0.y - index1.y) * canvas.height, 2)
@@ -568,20 +650,18 @@ export default function InterpreterPage() {
       if (face) {
         const chin = face[152];
         const forehead = face[10];
-        for (let i = 0; i < results.landmarks.length; i++) {
-          const landmarks = results.landmarks[i];
+        
+        for (let i = 0; i < finalHands.length; i++) { // Iterate over finalHands
+          const landmarks = finalHands[i].landmarks;
           const thumbTip = landmarks[4];
-          const dMother = Math.sqrt(
-            Math.pow(thumbTip.x - chin.x, 2) +
-            Math.pow(thumbTip.y - chin.y, 2)
-          );
-          const dFather = Math.sqrt(
-            Math.pow(thumbTip.x - forehead.x, 2) +
-            Math.pow(thumbTip.y - forehead.y, 2)
-          );
+          const indexTipForGood = landmarks[8];
+          
           if (!motherHoldRef.current[i]) motherHoldRef.current[i] = 0;
           if (!fatherHoldRef.current[i]) fatherHoldRef.current[i] = 0;
           
+          const dMother = Math.sqrt(Math.pow(thumbTip.x - chin.x, 2) + Math.pow(thumbTip.y - chin.y, 2));
+          const dFather = Math.sqrt(Math.pow(thumbTip.x - forehead.x, 2) + Math.pow(thumbTip.y - forehead.y, 2));
+
           // Mother: Thumb on chin
           // "Eat" sign (fingers touching thumb) should NOT trigger this
           if (dMother < 0.06 && detectedSigns[i] !== "Eat") {
@@ -591,35 +671,37 @@ export default function InterpreterPage() {
             motherHoldRef.current[i] = 0;
           }
           
-        // Father: Thumb on forehead
-        if (dFather < 0.06 && detectedSigns[i] !== "Eat") {
-          fatherHoldRef.current[i]++;
-          if (fatherHoldRef.current[i] > 6) detectedSigns[i] = "Father";
-        } else {
-          fatherHoldRef.current[i] = 0;
-        }
-        const indexTipForGood = landmarks[8];
-        if (!goodStateRef.current[i]) goodStateRef.current[i] = { stage: 'none', timer: 0 };
-        const dChinIdx = Math.sqrt(
-          Math.pow(indexTipForGood.x - chin.x, 2) +
-          Math.pow(indexTipForGood.y - chin.y, 2)
-        );
-        const pathGood = handPathRef.current[i] || [];
-        if (dChinIdx < 0.06) {
-          goodStateRef.current[i] = { stage: 'nearChin', timer: 0 };
-        } else if (goodStateRef.current[i].stage === 'nearChin' && pathGood.length >= 8) {
-          const zDeltaGood = pathGood[pathGood.length - 1].z - pathGood[0].z;
-          const yDeltaGood = pathGood[pathGood.length - 1].y - pathGood[0].y;
-          if (zDeltaGood < -0.05 || yDeltaGood > 0.03) {
-            detectedSigns[i] = "Good";
-            goodStateRef.current[i] = { stage: 'none', timer: 0 };
+          // Father: Thumb on forehead
+          if (dFather < 0.06 && detectedSigns[i] !== "Eat") {
+            fatherHoldRef.current[i]++;
+            if (fatherHoldRef.current[i] > 6) detectedSigns[i] = "Father";
           } else {
-            goodStateRef.current[i].timer++;
-            if (goodStateRef.current[i].timer > 40) goodStateRef.current[i] = { stage: 'none', timer: 0 };
+            fatherHoldRef.current[i] = 0;
+          }
+          
+          // Good Sign
+          if (!goodStateRef.current[i]) goodStateRef.current[i] = { stage: 'none', timer: 0 };
+          const dChinIdx = Math.sqrt(
+            Math.pow(indexTipForGood.x - chin.x, 2) +
+            Math.pow(indexTipForGood.y - chin.y, 2)
+          );
+          const pathGood = handPathRef.current[i] || [];
+          
+          if (dChinIdx < 0.06) {
+            goodStateRef.current[i] = { stage: 'nearChin', timer: 0 };
+          } else if (goodStateRef.current[i].stage === 'nearChin' && pathGood.length >= 8) {
+            const zDeltaGood = pathGood[pathGood.length - 1].z - pathGood[0].z;
+            const yDeltaGood = pathGood[pathGood.length - 1].y - pathGood[0].y;
+            if (zDeltaGood < -0.05 || yDeltaGood > 0.03) {
+              detectedSigns[i] = "Good";
+              goodStateRef.current[i] = { stage: 'none', timer: 0 };
+            } else {
+              goodStateRef.current[i].timer++;
+              if (goodStateRef.current[i].timer > 40) goodStateRef.current[i] = { stage: 'none', timer: 0 };
+            }
           }
         }
       }
-    }
 
       if (pose) {
         const leftShoulder = pose[11];
@@ -664,10 +746,10 @@ export default function InterpreterPage() {
       }
 
       if (pose || face) {
-        for (let i = 0; i < results.landmarks.length; i++) {
+        for (let i = 0; i < finalHands.length; i++) { // Iterate over finalHands
           if (!deafStateRef.current[i]) deafStateRef.current[i] = { stage: 'none', timer: 0 };
           const state = deafStateRef.current[i];
-          const indexTip = results.landmarks[i][8];
+          const indexTip = finalHands[i].landmarks[8];
           const mouthCenter = face ? { x: (face[13].x + face[14].x) / 2, y: (face[13].y + face[14].y) / 2 } : null;
           const leftEar = pose ? pose[7] : (face ? face[234] : null);
           const rightEar = pose ? pose[8] : (face ? face[454] : null);
