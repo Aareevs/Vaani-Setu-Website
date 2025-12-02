@@ -40,7 +40,7 @@ export default function SignTeacher({ onClose, onSignSaved, lastLandmarksRef, st
         const ctx = canvas.getContext('2d');
         const results = lastLandmarksRef.current;
 
-        if (ctx) {
+        if (ctx && results) {
           // Clear canvas
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
