@@ -152,6 +152,47 @@ export default function InterpreterPage() {
     const isPinkyDown = isFingerDown(pinkyTipY, pinkyBaseY);
     
     // Classification Logic
+    
+    // 0. Eat Sign (PRIORITY) - All finger tips touching thumb tip
+    const thumbTip = landmarks[4];
+    const middleTip = landmarks[12];
+    const ringTip = landmarks[16];
+    const pinkyTip = landmarks[20];
+
+    const getDist = (p1: HandLandmark, p2: HandLandmark) => {
+      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2) + Math.pow(p1.z - p2.z, 2));
+    };
+
+    const distThumbIndex = getDist(thumbTip, landmarks[8]);
+    const distThumbMiddle = getDist(thumbTip, middleTip);
+    const distThumbRing = getDist(thumbTip, ringTip);
+    const distThumbPinky = getDist(thumbTip, pinkyTip);
+
+    // Threshold for "touching"
+    const TOUCH_THRESHOLD = 0.08; // Slightly relaxed
+    
+    // Check hand shape first
+    const isEatShape = distThumbIndex < TOUCH_THRESHOLD && 
+                       distThumbMiddle < TOUCH_THRESHOLD && 
+                       distThumbRing < TOUCH_THRESHOLD && 
+                       distThumbPinky < TOUCH_THRESHOLD;
+
+    if (isEatShape) {
+      // If face landmarks are available, check proximity to mouth
+      if (faceLandmarks && faceLandmarks.length > 0) {
+        const upperLip = faceLandmarks[13];
+        const lowerLip = faceLandmarks[14];
+        if (upperLip && lowerLip) {
+          const mouthX = (upperLip.x + lowerLip.x) / 2;
+          const mouthY = (upperLip.y + lowerLip.y) / 2;
+          const distHandMouth = Math.sqrt(Math.pow(thumbTip.x - mouthX, 2) + Math.pow(thumbTip.y - mouthY, 2));
+          if (distHandMouth < 0.2) return "Eat"; // Relaxed mouth threshold
+        }
+      } else {
+        return "Eat";
+      }
+    }
+
     // 1. "I Love You" (ILY Sign - Index, Pinky, Thumb Up)
     if (isIndexUp && isPinkyUp && isThumbUp && isMiddleDown && isRingDown) {
       return "I Love You (ILY)";
@@ -214,60 +255,7 @@ export default function InterpreterPage() {
       return "Two Fingers Up";
     }
 
-    // 7. Eat Sign (All finger tips touching thumb tip AND near mouth)
-    const thumbTip = landmarks[4];
-    const middleTip = landmarks[12];
-    const ringTip = landmarks[16];
-    const pinkyTip = landmarks[20];
 
-    const getDist = (p1: HandLandmark, p2: HandLandmark) => {
-      return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2) + Math.pow(p1.z - p2.z, 2));
-    };
-
-    const distThumbIndex = getDist(thumbTip, landmarks[8]);
-    const distThumbMiddle = getDist(thumbTip, middleTip);
-    const distThumbRing = getDist(thumbTip, ringTip);
-    const distThumbPinky = getDist(thumbTip, pinkyTip);
-
-    // Threshold for "touching"
-    const TOUCH_THRESHOLD = 0.06; 
-    
-    // Check hand shape first
-    const isEatShape = distThumbIndex < TOUCH_THRESHOLD && 
-                       distThumbMiddle < TOUCH_THRESHOLD && 
-                       distThumbRing < TOUCH_THRESHOLD && 
-                       distThumbPinky < TOUCH_THRESHOLD;
-
-    if (isEatShape) {
-      // If face landmarks are available, check proximity to mouth
-      if (faceLandmarks && faceLandmarks.length > 0) {
-        // Mouth center (approximate using lip landmarks)
-        // 13: Upper lip center, 14: Lower lip center
-        const upperLip = faceLandmarks[13];
-        const lowerLip = faceLandmarks[14];
-        
-        if (upperLip && lowerLip) {
-          const mouthX = (upperLip.x + lowerLip.x) / 2;
-          const mouthY = (upperLip.y + lowerLip.y) / 2;
-          
-          // Calculate distance from hand (thumb tip) to mouth
-          const distHandMouth = Math.sqrt(
-            Math.pow(thumbTip.x - mouthX, 2) + 
-            Math.pow(thumbTip.y - mouthY, 2)
-          );
-          
-          // Threshold for "near mouth" (adjust as needed)
-          const MOUTH_THRESHOLD = 0.15;
-          
-          if (distHandMouth < MOUTH_THRESHOLD) {
-            return "Eat";
-          }
-        }
-      } else {
-        // Fallback if no face detected (less accurate)
-        return "Eat";
-      }
-    }
     
     // Default Fallback
     return "Hand Detected - Unknown Sign";
@@ -410,6 +398,13 @@ export default function InterpreterPage() {
       
       // Loop through each detected hand
       for (let i = 0; i < results.landmarks.length; i++) {
+        // Filter out low confidence hands (ghost hands)
+        const handedness = results.handednesses?.[i] as any;
+        if (handedness && handedness[0] && handedness[0].score < 0.6) {
+           detectedSigns.push("Low Confidence");
+           continue;
+        }
+
         const landmarks = results.landmarks[i];
         const scaleX = canvas.width;
         const scaleY = canvas.height;
