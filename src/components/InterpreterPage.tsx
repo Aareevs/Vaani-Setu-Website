@@ -559,13 +559,18 @@ export default function InterpreterPage() {
           );
           if (!motherHoldRef.current[i]) motherHoldRef.current[i] = 0;
           if (!fatherHoldRef.current[i]) fatherHoldRef.current[i] = 0;
-          if (dMother < 0.06) {
+          
+          // Mother: Thumb on chin + Open Hand (Hello)
+          // "Eat" sign (fingers touching thumb) should NOT trigger this
+          if (dMother < 0.06 && detectedSigns[i] === "Hello") {
             motherHoldRef.current[i]++;
             if (motherHoldRef.current[i] > 6) detectedSigns[i] = "Mother";
           } else {
             motherHoldRef.current[i] = 0;
           }
-        if (dFather < 0.06) {
+          
+        // Father: Thumb on forehead + Open Hand
+        if (dFather < 0.06 && detectedSigns[i] === "Hello") {
           fatherHoldRef.current[i]++;
           if (fatherHoldRef.current[i] > 6) detectedSigns[i] = "Father";
         } else {
@@ -646,7 +651,12 @@ export default function InterpreterPage() {
           const rightEar = pose ? pose[8] : (face ? face[454] : null);
           const earTarget = leftEar && rightEar ? (Math.abs(indexTip.x - leftEar.x) < Math.abs(indexTip.x - rightEar.x) ? leftEar : rightEar) : (leftEar || rightEar);
           state.timer = Math.min(120, state.timer + 1);
-          if (state.stage === 'none' && mouthCenter) {
+          
+          // Deaf: Index finger touching mouth then ear (or vice versa)
+          // Must be "Index Finger Up" sign to avoid confusion with "Eat"
+          const isIndexFingerSign = detectedSigns[i] === "Index Finger Up";
+          
+          if (state.stage === 'none' && mouthCenter && isIndexFingerSign) {
             const dMouth = Math.sqrt(Math.pow(indexTip.x - mouthCenter.x, 2) + Math.pow(indexTip.y - mouthCenter.y, 2));
             if (dMouth < 0.05) {
               state.stage = 'mouth';
