@@ -417,6 +417,22 @@ export default function InterpreterPage() {
         if (width < 0.05 || height < 0.05) {
           continue; // Ignore tiny hands
         }
+
+        // 3. Check Overlap (Duplicate Detection)
+        // If this is the second hand, check if it's too close to the first one
+        if (i > 0) {
+          const prevLandmarks = results.landmarks[0];
+          const prevX = prevLandmarks.map(l => l.x).reduce((a, b) => a + b) / prevLandmarks.length;
+          const prevY = prevLandmarks.map(l => l.y).reduce((a, b) => a + b) / prevLandmarks.length;
+          
+          const currX = xValues.reduce((a, b) => a + b) / xValues.length;
+          const currY = yValues.reduce((a, b) => a + b) / yValues.length;
+          
+          const dist = Math.sqrt(Math.pow(currX - prevX, 2) + Math.pow(currY - prevY, 2));
+          if (dist < 0.1) {
+            continue; // Ignore duplicate hand
+          }
+        }
         const scaleX = canvas.width;
         const scaleY = canvas.height;
         
