@@ -179,8 +179,8 @@ export default function SettingsPage({ darkMode, toggleDarkMode }: SettingsPageP
           description: 'Help improve the app by sharing usage data',
           type: 'switch',
         },
-        // Admin Mode - Only for aareevs@gmail.com
-        ...(user?.email === 'aareevs@gmail.com' ? [{
+        // Admin Mode - Only for authorized admins
+        ...(user?.email && (console.log('Current user:', user.email), ['aareevs@gmail.com', 'abahuguna2007@gmail.com'].includes(user.email.toLowerCase())) ? [{
           id: 'adminMode',
           label: 'Admin Mode',
           description: 'Enable teaching tools and advanced features',
