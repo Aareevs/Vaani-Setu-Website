@@ -400,8 +400,7 @@ export default function InterpreterPage() {
       for (let i = 0; i < results.landmarks.length; i++) {
         // Filter out low confidence hands (ghost hands)
         const handedness = results.handednesses?.[i] as any;
-        if (handedness && handedness[0] && handedness[0].score < 0.6) {
-           detectedSigns.push("Low Confidence");
+        if (handedness && handedness[0] && handedness[0].score < 0.7) {
            continue;
         }
 
@@ -839,7 +838,10 @@ export default function InterpreterPage() {
           delegate: "GPU"
         },
         runningMode: "VIDEO",
-        numHands: 2
+        numHands: 2,
+        minHandDetectionConfidence: 0.7,
+        minHandPresenceConfidence: 0.7,
+        minTrackingConfidence: 0.7
       });
       
       handLandmarkerRef.current = handLandmarker;
