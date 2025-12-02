@@ -124,7 +124,7 @@ export default function InterpreterPage() {
   };
 
   // Detects only the STATIC hand shape for the CURRENT frame
-  const detectStaticSign = (landmarks: HandLandmark[]): string => {
+  const detectStaticSign = (landmarks: HandLandmark[], faceLandmarks?: any[]): string => {
     if (!landmarks || landmarks.length < 21) return "No Hand";
     
     // Extract key joint Y-coordinates
@@ -214,7 +214,7 @@ export default function InterpreterPage() {
       return "Two Fingers Up";
     }
 
-    // 7. Eat Sign (All finger tips touching thumb tip)
+    // 7. Eat Sign (All finger tips touching thumb tip AND near mouth)
     const thumbTip = landmarks[4];
     const middleTip = landmarks[12];
     const ringTip = landmarks[16];
@@ -231,12 +231,42 @@ export default function InterpreterPage() {
 
     // Threshold for "touching"
     const TOUCH_THRESHOLD = 0.06; 
+    
+    // Check hand shape first
+    const isEatShape = distThumbIndex < TOUCH_THRESHOLD && 
+                       distThumbMiddle < TOUCH_THRESHOLD && 
+                       distThumbRing < TOUCH_THRESHOLD && 
+                       distThumbPinky < TOUCH_THRESHOLD;
 
-    if (distThumbIndex < TOUCH_THRESHOLD && 
-        distThumbMiddle < TOUCH_THRESHOLD && 
-        distThumbRing < TOUCH_THRESHOLD && 
-        distThumbPinky < TOUCH_THRESHOLD) {
-      return "Eat";
+    if (isEatShape) {
+      // If face landmarks are available, check proximity to mouth
+      if (faceLandmarks && faceLandmarks.length > 0) {
+        // Mouth center (approximate using lip landmarks)
+        // 13: Upper lip center, 14: Lower lip center
+        const upperLip = faceLandmarks[13];
+        const lowerLip = faceLandmarks[14];
+        
+        if (upperLip && lowerLip) {
+          const mouthX = (upperLip.x + lowerLip.x) / 2;
+          const mouthY = (upperLip.y + lowerLip.y) / 2;
+          
+          // Calculate distance from hand (thumb tip) to mouth
+          const distHandMouth = Math.sqrt(
+            Math.pow(thumbTip.x - mouthX, 2) + 
+            Math.pow(thumbTip.y - mouthY, 2)
+          );
+          
+          // Threshold for "near mouth" (adjust as needed)
+          const MOUTH_THRESHOLD = 0.15;
+          
+          if (distHandMouth < MOUTH_THRESHOLD) {
+            return "Eat";
+          }
+        }
+      } else {
+        // Fallback if no face detected (less accurate)
+        return "Eat";
+      }
     }
     
     // Default Fallback
@@ -408,13 +438,15 @@ export default function InterpreterPage() {
             ctx.fillStyle = '#10b981';
             ctx.beginPath();
             ctx.arc(landmark.x * scaleX, landmark.y * scaleY, 8, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.fillStyle = '#ef4444';
           }
         }
         
-        // 3. Gesture Detection Logic for this hand
-        const staticSign = detectStaticSign(landmarks);
+        // 3. Detect Sign
+        const staticSign = detectStaticSign(
+          landmarks, 
+          faceResults && faceResults.faceLandmarks ? faceResults.faceLandmarks[0] : undefined
+        );
+        detectedSigns.push(staticSign);
         const wrist = landmarks[0];
         
         // Store hand position for two-hand detection
