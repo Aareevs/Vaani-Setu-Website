@@ -521,14 +521,24 @@ export default function InterpreterPage() {
             !signToSpeak.includes("slapping...") &&
             signToSpeak !== speechStateRef.current.text) {
               
-          // Debounce: Don't speak if same sign was spoken recently (though check above handles change)
-          // But if it switches A -> B -> A quickly, we might want to allow it.
-          // The user said "only says that out loud once", implying once per detection event.
+          // console.log(`Attempting to speak: ${signToSpeak}, Audio Enabled: ALWAYS ON`); // DEBUG
           
+          // Always speak
           window.speechSynthesis.cancel(); // Stop previous speech
           const utterance = new SpeechSynthesisUtterance(signToSpeak);
           utterance.rate = 1.0;
+          utterance.volume = 1.0;
+          
+          // Ensure voices are loaded
+          const voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) {
+              // Prefer a female voice if available (optional, but often clearer)
+              // const preferredVoice = voices.find(v => v.name.includes("Google US English") || v.name.includes("Samantha"));
+              // if (preferredVoice) utterance.voice = preferredVoice;
+          }
+
           window.speechSynthesis.speak(utterance);
+          // console.log("Speech triggered"); // DEBUG
           
           speechStateRef.current = { text: signToSpeak, lastSpokenAt: Date.now() };
         } else if (!signToSpeak || signToSpeak === "Hand Detected - Unknown Sign") {
@@ -1394,12 +1404,7 @@ export default function InterpreterPage() {
                       >
                         <VideoOff className="w-6 h-6" />
                       </button>
-                      <button
-                        onClick={() => setAudioEnabled(!audioEnabled)}
-                        className="p-4 bg-gray-700 dark:bg-gray-900/60 hover:bg-gray-600 text-white rounded-full shadow-lg transition-colors"
-                      >
-                        {audioEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-                      </button>
+                      {/* Audio toggle removed as per request - always on */}
                       <button
                         onClick={() => setIsFullscreen(!isFullscreen)}
                         className="p-4 bg-gray-700 dark:bg-gray-900/60 hover:bg-gray-600 text-white rounded-full shadow-lg transition-colors"
