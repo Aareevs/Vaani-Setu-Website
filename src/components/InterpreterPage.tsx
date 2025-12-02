@@ -560,17 +560,17 @@ export default function InterpreterPage() {
           if (!motherHoldRef.current[i]) motherHoldRef.current[i] = 0;
           if (!fatherHoldRef.current[i]) fatherHoldRef.current[i] = 0;
           
-          // Mother: Thumb on chin + Open Hand (Hello)
+          // Mother: Thumb on chin
           // "Eat" sign (fingers touching thumb) should NOT trigger this
-          if (dMother < 0.06 && detectedSigns[i] === "Hello") {
+          if (dMother < 0.06 && detectedSigns[i] !== "Eat") {
             motherHoldRef.current[i]++;
             if (motherHoldRef.current[i] > 6) detectedSigns[i] = "Mother";
           } else {
             motherHoldRef.current[i] = 0;
           }
           
-        // Father: Thumb on forehead + Open Hand
-        if (dFather < 0.06 && detectedSigns[i] === "Hello") {
+        // Father: Thumb on forehead
+        if (dFather < 0.06 && detectedSigns[i] !== "Eat") {
           fatherHoldRef.current[i]++;
           if (fatherHoldRef.current[i] > 6) detectedSigns[i] = "Father";
         } else {
@@ -630,14 +630,14 @@ export default function InterpreterPage() {
         const rightUp = (rightPrevY - rightWrist.y) > 0.02;
         const leftDownSmall = (leftWrist.y - leftPrevY) > 0.01;
         if (palmsClose && rightUp) {
-          detectedSigns[1] = "Morning";
+          if (detectedSigns.length > 1) detectedSigns[1] = "Morning";
         }
         if (palmsClose && leftDownSmall && Math.abs((rightPrevY - rightWrist.y)) < 0.01) {
           detectedSigns[0] = "Afternoon";
         }
         const rightDown = (rightWrist.y - rightPrevY) > 0.02;
         if (palmsClose && rightDown) {
-          detectedSigns[1] = "Night";
+          if (detectedSigns.length > 1) detectedSigns[1] = "Night";
         }
       }
 
