@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Gemini API - Server-side only (API key never exposed to client)
-// Using gemini-pro which is the stable model
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+// Using v1 API with gemini-pro model
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
