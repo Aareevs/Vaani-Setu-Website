@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Gemini API - Server-side only (API key never exposed to client)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -28,10 +28,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY not configured');
-      return res.status(500).json({ 
-        error: 'AI service not configured',
-        message: '🔑 API key error: Server configuration issue. Please contact support.'
+      console.error('GEMINI_API_KEY not configured in environment variables');
+      return res.status(200).json({ 
+        success: true,
+        text: '🔑 AI service is not configured yet. Please ask the admin to set up the GEMINI_API_KEY in Vercel environment variables.'
       });
     }
 
