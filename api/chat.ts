@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Gemini API - Server-side only (API key never exposed to client)
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -21,7 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { prompt } = req.body;
+    const { prompt } = req.body || {};
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
     if (!prompt || typeof prompt !== 'string') {
       return res.status(200).json({ 
@@ -31,14 +31,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY not configured in environment variables');
       return res.status(200).json({ 
         success: true,
-        text: '🔑 AI service is not configured yet. Please ask the admin to set up the GEMINI_API_KEY in Vercel environment variables.'
+        text: '🔑 AI service is not configured yet. Please set GEMINI_API_KEY in Vercel environment variables.'
       });
     }
 
-    // Call Gemini API using native fetch (available in Node 18+)
+    // Call Gemini API
     const apiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
@@ -65,20 +64,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (apiResponse.status === 429) {
         return res.status(200).json({
           success: true,
-          text: '📊 Quota exceeded: You\'ve reached your daily limit. Please try again tomorrow.'
-        });
-      }
-
-      if (apiResponse.status === 400) {
-        return res.status(200).json({
-          success: true,
-          text: '🤔 I couldn\'t understand that request. Could you try rephrasing?'
+          text: '📊 Quota exceeded: You\'ve reached the daily limit. Please try again tomorrow.'
         });
       }
       
       return res.status(200).json({
         success: true,
-        text: '🤔 Oops! Something went wrong while connecting to the AI. Please try again later.'
+        text: '🤔 Oops! AI service error. Please try again later.'
       });
     }
 
@@ -89,12 +81,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       text 
     });
 
-  } catch (error: any) {
-    console.error('Chat API error:', error?.message || error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Chat API error:', errorMessage);
     
     return res.status(200).json({
       success: true,
-      text: '🤔 Oops! Something went wrong. Please try again later. Error: ' + (error?.message || 'Unknown error')
+      text: '🤔 Oops! Something went wrong. Please try again.'
     });
   }
 }
