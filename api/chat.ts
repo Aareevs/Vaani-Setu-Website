@@ -24,7 +24,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { prompt } = req.body;
 
     if (!prompt || typeof prompt !== 'string') {
-      return res.status(400).json({ error: 'Invalid prompt provided' });
+      return res.status(200).json({ 
+        success: true,
+        text: 'Please provide a message to chat with me!'
+      });
     }
 
     if (!GEMINI_API_KEY) {
@@ -35,8 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Call Gemini API
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    // Call Gemini API using native fetch (available in Node 18+)
+    const apiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,25 +57,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Gemini API error:', response.status, errorData);
+    const responseData = await apiResponse.json();
+
+    if (!apiResponse.ok) {
+      console.error('Gemini API error:', apiResponse.status, JSON.stringify(responseData));
       
-      if (response.status === 429) {
-        return res.status(429).json({
-          error: 'Rate limit exceeded',
-          message: '📊 Quota exceeded: You\'ve reached your daily limit. Please try again tomorrow.'
+      if (apiResponse.status === 429) {
+        return res.status(200).json({
+          success: true,
+          text: '📊 Quota exceeded: You\'ve reached your daily limit. Please try again tomorrow.'
+        });
+      }
+
+      if (apiResponse.status === 400) {
+        return res.status(200).json({
+          success: true,
+          text: '🤔 I couldn\'t understand that request. Could you try rephrasing?'
         });
       }
       
-      return res.status(response.status).json({
-        error: 'AI service error',
-        message: '🤔 Oops! Something went wrong while connecting to the AI. Please try again later.'
+      return res.status(200).json({
+        success: true,
+        text: '🤔 Oops! Something went wrong while connecting to the AI. Please try again later.'
       });
     }
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated';
+    const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated';
 
     return res.status(200).json({ 
       success: true,
@@ -80,18 +90,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
   } catch (error: any) {
-    console.error('Chat API error:', error);
+    console.error('Chat API error:', error?.message || error);
     
-    if (error.message?.includes('fetch')) {
-      return res.status(503).json({
-        error: 'Network error',
-        message: '🌐 Network error: Please check your connection and try again.'
-      });
-    }
-
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: '🤔 Oops! Something went wrong. Please try again later.'
+    return res.status(200).json({
+      success: true,
+      text: '🤔 Oops! Something went wrong. Please try again later. Error: ' + (error?.message || 'Unknown error')
     });
   }
 }
