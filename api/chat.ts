@@ -67,10 +67,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           text: '📊 Quota exceeded: You\'ve reached the daily limit. Please try again tomorrow.'
         });
       }
+
+      if (apiResponse.status === 400 && responseData?.error?.message?.includes('API key')) {
+        return res.status(200).json({
+          success: true,
+          text: '🔑 API key issue. Please check if the GEMINI_API_KEY is valid.'
+        });
+      }
       
+      // Return actual error for debugging
       return res.status(200).json({
         success: true,
-        text: '🤔 Oops! AI service error. Please try again later.'
+        text: `🤔 AI error (${apiResponse.status}): ${responseData?.error?.message || 'Unknown error'}`
       });
     }
 
