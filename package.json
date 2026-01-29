@@ -58,7 +58,8 @@
       },
       "devDependencies": {
             "@tailwindcss/typography": "^0.5.19",
-            "@types/node": "^20.10.0",
+            "@types/node": "^20.19.30",
+            "@vercel/node": "^5.5.28",
             "@vitejs/plugin-react-swc": "^3.10.2",
             "vite": "6.3.5",
             "vite-plugin-pwa": "^1.2.0"

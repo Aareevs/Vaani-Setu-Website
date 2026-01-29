@@ -1,39 +1,29 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// Gemini API - Now calls backend endpoint (API key is kept server-side)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
-const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
-
-export const getGeminiResponse = async (prompt: string) => {
+export const getGeminiResponse = async (prompt: string): Promise<string> => {
   try {
-    if (!genAI) {
-      return "🔑 API key error: Please set the VITE_GEMINI_API_KEY environment variable.";
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("❌ API error:", data);
+      return data.message || "🤔 Oops! Something went wrong while connecting to the AI. Please try again later.";
     }
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    return text;
+
+    return data.text;
   } catch (error: any) {
     console.error("❌ Error getting response from Gemini:", error);
-    console.error("📋 Error details:", {
-      message: error.message,
-      status: error.status,
-      statusText: error.statusText,
-      code: error.code,
-      stack: error.stack?.substring(0, 200)
-    });
     
-    // More specific error handling
-    if (error.message?.includes('fetch')) {
+    if (error.message?.includes('fetch') || error.message?.includes('network')) {
       return "🌐 Network error: Please check your internet connection and try again.";
-    } else if (error.message?.includes('API key')) {
-      return "🔑 API key error: Please check your Gemini API key configuration.";
-    } else if (error.message?.includes('quota')) {
-      return "📊 Quota exceeded: You've reached your daily limit. Please try again tomorrow.";
-    } else if (error.message?.includes('permission')) {
-      return "🔒 Permission denied: Please check your API key permissions.";
-    } else if (error instanceof Error) {
-      return `🤖 AI Error: ${error.message}`;
     }
     
     return "🤔 Oops! Something went wrong while connecting to the AI. Please try again later.";
@@ -41,14 +31,15 @@ export const getGeminiResponse = async (prompt: string) => {
 };
 
 // Test function to verify API connectivity
-export const testGeminiConnection = async () => {
+export const testGeminiConnection = async (): Promise<string | null> => {
   try {
-    if (!genAI) {
-      return "🔑 API key error";
-    }
     const response = await getGeminiResponse("Hello, this is a test message. Please respond with 'Test successful!'");
-    return response;
+    if (response && !response.includes('error') && !response.includes('Oops')) {
+      return response;
+    }
+    return null;
   } catch (error) {
+    console.error("Connection test failed:", error);
     return null;
   }
 };
