@@ -10,13 +10,13 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  const hasApiKey = !!process.env.GEMINI_API_KEY;
+  const hasApiKey = !!process.env.GROQ_API_KEY;
 
   return res.status(200).json({
     success: true,
     message: 'Vaani Setu API is running!',
     timestamp: new Date().toISOString(),
-    geminiConfigured: hasApiKey,
+    groqConfigured: hasApiKey,
     endpoints: {
       chat: '/api/chat - POST - AI chatbot responses',
       moderate: '/api/moderate - POST - Content moderation',

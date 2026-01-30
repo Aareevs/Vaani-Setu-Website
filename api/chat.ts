@@ -1,14 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Gemini API - Server-side only (API key never exposed to client)
-// Using gemini-2.0-flash which is confirmed available
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+// Groq API - Server-side only (API key never exposed to client)
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'mixtral-8x7b-32768'; // Or 'llama2-70b-4096' or other available Groq models
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Include Authorization for Groq
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { prompt } = req.body || {};
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
     if (!prompt || typeof prompt !== 'string') {
       return res.status(200).json({ 
@@ -31,48 +31,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    if (!GEMINI_API_KEY) {
+    if (!GROQ_API_KEY) {
       return res.status(200).json({ 
         success: true,
-        text: '🔑 AI service is not configured yet. Please set GEMINI_API_KEY in Vercel environment variables.'
+        text: '🔑 AI service is not configured yet. Please set GROQ_API_KEY in Vercel environment variables.'
       });
     }
 
-    // Call Gemini API
-    const apiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    // Call Groq API
+    const apiResponse = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`, // Groq uses Bearer token for auth
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
+        messages: [{
+          role: 'user',
+          content: prompt
         }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1024,
-        }
+        model: GROQ_MODEL,
+        temperature: 0.7,
+        max_tokens: 1024,
       })
     });
 
     const responseData = await apiResponse.json();
 
     if (!apiResponse.ok) {
-      console.error('Gemini API error:', apiResponse.status, JSON.stringify(responseData));
+      console.error('Groq API error:', apiResponse.status, JSON.stringify(responseData));
       
       if (apiResponse.status === 429) {
         return res.status(200).json({
           success: true,
-          text: '📊 Quota exceeded: You\'ve reached the daily limit. Please try again tomorrow.'
+          text: '📊 Rate limit exceeded: You\'ve reached the daily limit. Please try again tomorrow.'
         });
       }
 
-      if (apiResponse.status === 400 && responseData?.error?.message?.includes('API key')) {
+      if (apiResponse.status === 401 || (apiResponse.status === 400 && responseData?.error?.message?.includes('API key'))) {
         return res.status(200).json({
           success: true,
-          text: '🔑 API key issue. Please check if the GEMINI_API_KEY is valid.'
+          text: '🔑 API key issue. Please check if the GROQ_API_KEY is valid.'
         });
       }
       
@@ -83,12 +82,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated';
+    const text = responseData.choices?.[0]?.message?.content || 'No response generated';
 
     return res.status(200).json({ 
       success: true,
-      text 
-    });
+      text     });
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
