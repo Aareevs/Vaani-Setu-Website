@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Groq API - Server-side only (API key never exposed to client)
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'mixtral-8x7b-32768'; // Or 'llama2-70b-4096' or other available Groq models
+const GROQ_MODEL = 'llama-3.3-70b-versatile'; // Groq's current flagship model
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
