@@ -102,7 +102,7 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-900 dark:to-blue-900/10">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-900 dark:to-blue-900/10 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <motion.div
@@ -112,7 +112,7 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
           className="mb-10"
         >
           <div className="flex items-center gap-3 mb-3">
-            <h1 className="text-4xl text-gray-900 dark:text-white">
+            <h1 className="text-2xl sm:text-4xl text-gray-900 dark:text-white">
               Welcome back, {userName}
             </h1>
             <motion.span
@@ -253,7 +253,7 @@ export default function Dashboard({ userName, onNavigate }: DashboardProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-100 dark:border-gray-700"
+          className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-4 sm:p-8 border border-gray-100 dark:border-gray-700"
         >
           <h2 className="text-2xl mb-6 text-gray-900 dark:text-white flex items-center gap-2">
             <Clock className="w-6 h-6 text-purple-600 dark:text-purple-400" />

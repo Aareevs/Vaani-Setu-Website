@@ -94,20 +94,6 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
 
           {/* Mobile Menu Button & Dark Mode Toggle */}
           <div className="md:hidden flex items-center gap-2">
-            <div className="relative w-40 rounded-full border border-gray-300/60 bg-white/70 shadow-sm hover:shadow-md focus-within:border-gray-400 focus-within:shadow-md dark:bg-gray-800 dark:border-gray-700" role="search">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') submitSearch();
-                }}
-                placeholder="Search..."
-                className="w-full h-10 pl-7 pr-3 bg-transparent outline-none text-sm text-gray-700 placeholder:text-gray-500 dark:text-gray-300 dark:placeholder-gray-400"
-                aria-label="Search site"
-              />
-            </div>
             {toggleDarkMode && (
               <button
                 onClick={toggleDarkMode}
@@ -145,6 +131,21 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
               className="md:hidden overflow-hidden"
             >
               <div className="py-4 space-y-2">
+                {/* Mobile Search */}
+                <div className="relative w-full rounded-full border border-gray-300/60 bg-white/70 shadow-sm focus-within:border-gray-400 focus-within:shadow-md dark:bg-gray-800 dark:border-gray-700 mb-3" role="search">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { submitSearch(); setMobileMenuOpen(false); }
+                    }}
+                    placeholder="Search..."
+                    className="w-full h-10 pl-9 pr-3 bg-transparent outline-none text-sm text-gray-700 placeholder:text-gray-500 dark:text-gray-300 dark:placeholder-gray-400"
+                    aria-label="Search site"
+                  />
+                </div>
                 {navItems.map((item) => (
                   <button
                     key={item.id}

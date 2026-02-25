@@ -16,7 +16,7 @@ import Footer from './components/Footer';
 import Chatbot from './components/Chatbot';
 import { ToastContainer } from './components/ui/Toast';
 import { useToast } from './hooks/useToast';
-import { EnhancedBreadcrumb } from './components/ui/breadcrumb';
+
 import { OfflineIndicator } from './components/ui/OfflineIndicator';
 import { BackToTop } from './components/ui/BackToTop';
 import { useAuth } from './context/AuthContext';
@@ -215,7 +215,7 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen overflow-x-hidden transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <ToastContainer toasts={toasts} onClose={removeToast} />
       <OfflineIndicator />
       
@@ -231,21 +231,7 @@ function App() {
         />
       )}
 
-      {/* Breadcrumb Navigation */}
-      {currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== '404' && (
-        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <EnhancedBreadcrumb 
-              items={[
-                { label: 'Home', onClick: () => navigateTo('dashboard') },
-                { label: currentPage.charAt(0).toUpperCase() + currentPage.slice(1), onClick: () => {} }
-              ]}
-              darkMode={darkMode}
-              separator="chevron"
-            />
-          </div>
-        </div>
-      )}
+
       
       <main className={isLoggedIn ? '' : ''}>
         {renderPage()}

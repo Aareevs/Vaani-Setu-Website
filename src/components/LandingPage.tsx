@@ -106,7 +106,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
               repeat: Infinity,
               ease: "linear"
             }}
-            className="absolute -top-60 -right-60 w-[500px] h-[500px] bg-gradient-to-br from-purple-400/30 via-purple-300/20 to-transparent dark:from-purple-600/20 dark:via-purple-500/10 dark:to-transparent rounded-full blur-3xl"
+            className="absolute -top-60 -right-60 w-[250px] h-[250px] md:w-[500px] md:h-[500px] bg-gradient-to-br from-purple-400/30 via-purple-300/20 to-transparent dark:from-purple-600/20 dark:via-purple-500/10 dark:to-transparent rounded-full blur-3xl"
           />
           <motion.div
             animate={{
@@ -118,7 +118,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
               repeat: Infinity,
               ease: "linear"
             }}
-            className="absolute -bottom-60 -left-60 w-[500px] h-[500px] bg-gradient-to-br from-blue-400/30 via-blue-300/20 to-transparent dark:from-blue-600/20 dark:via-blue-500/10 dark:to-transparent rounded-full blur-3xl"
+            className="absolute -bottom-60 -left-60 w-[250px] h-[250px] md:w-[500px] md:h-[500px] bg-gradient-to-br from-blue-400/30 via-blue-300/20 to-transparent dark:from-blue-600/20 dark:via-blue-500/10 dark:to-transparent rounded-full blur-3xl"
           />
           
           {/* Additional subtle floating elements */}
@@ -172,7 +172,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
         </div>
 
         {/* Content */}
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto py-20">
+        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto py-12 md:py-20">
           {/* Glass morphism background for content */}
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-800 to-violet-900 backdrop-blur-md rounded-3xl -z-10" />
           {/* Logo */}
@@ -180,17 +180,17 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, type: "spring" }}
-            className="flex items-center justify-center gap-4 mb-8"
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8"
           >
             <motion.div
               whileHover={{ scale: 1.05, rotate: 5 }}
               transition={{ type: "spring", stiffness: 300 }}
-              className="w-20 h-20 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-2xl p-3 ring-4 ring-purple-100 dark:ring-purple-900/30 backdrop-blur-sm"
+              className="w-16 h-16 sm:w-20 sm:h-20 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-2xl p-3 ring-4 ring-purple-100 dark:ring-purple-900/30 backdrop-blur-sm"
             >
               <img src={logo} alt="Vaani Setu Logo" className="w-full h-full object-contain" />
             </motion.div>
             <motion.h1 
-              className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent text-5xl md:text-7xl font-bold"
+              className="bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600 bg-clip-text text-transparent text-3xl sm:text-5xl md:text-7xl font-bold"
               animate={{ 
                 backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] 
               }}
@@ -210,7 +210,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-2xl md:text-4xl text-gray-700 dark:text-gray-200 mb-6 font-light tracking-wide"
+            className="text-xl sm:text-2xl md:text-4xl text-gray-700 dark:text-gray-200 mb-6 font-light tracking-wide"
           >
             Breaking Communication Barriers with AI
           </motion.p>
@@ -220,7 +220,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed font-light"
+            className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed font-light"
           >
             Experience the power of AI-driven sign language interpretation. 
             Connect seamlessly with real-time translation from sign language to text and speech.
@@ -231,11 +231,11 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="flex flex-wrap justify-center gap-6 mb-12"
+            className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-8 sm:mb-12"
           >
             <motion.div 
               whileHover={{ scale: 1.05, y: -2 }}
-              className="group flex items-center gap-3 px-6 py-4 bg-white/60 dark:bg-purple-700 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-purple-500 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="group flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-white/60 dark:bg-purple-700 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-purple-500 shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg group-hover:scale-110 transition-transform">
                 <Users className="w-6 h-6 text-white" />
@@ -247,7 +247,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             </motion.div>
             <motion.div 
               whileHover={{ scale: 1.05, y: -2 }}
-              className="group flex items-center gap-3 px-6 py-4 bg-white/60 dark:bg-purple-700 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-purple-500 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="group flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-white/60 dark:bg-purple-700 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-purple-500 shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg group-hover:scale-110 transition-transform">
                 <Zap className="w-6 h-6 text-white" />
@@ -259,7 +259,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             </motion.div>
             <motion.div 
               whileHover={{ scale: 1.05, y: -2 }}
-              className="group flex items-center gap-3 px-6 py-4 bg-white/60 dark:bg-purple-700 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-purple-500 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="group flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-white/60 dark:bg-purple-700 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-purple-500 shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg group-hover:scale-110 transition-transform">
                 <Zap className="w-6 h-6 text-white" />
@@ -334,7 +334,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
       </div>
 
       {/* About Section */}
-      <div id="about-section" className="py-24 px-4 bg-white dark:bg-gray-800">
+      <div id="about-section" className="py-12 md:py-24 px-4 bg-white dark:bg-gray-800">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -343,7 +343,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             viewport={{ once: true }}
             className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl mb-6 bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+            <h2 className="text-2xl sm:text-4xl md:text-5xl mb-6 bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
               Breaking Communication Barriers
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
@@ -431,7 +431,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
       </div>
 
       {/* Demo Video Section - NEW */}
-      <div className="py-24 px-4 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900/20">
+      <div className="py-12 md:py-24 px-4 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900/20">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -449,7 +449,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
               </p>
             </div>
 
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl max-w-5xl mx-auto bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 p-8">
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl max-w-5xl mx-auto bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 p-4 md:p-8">
               {/* Demo Interface Mockup */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
                 {/* Demo Header */}
@@ -581,7 +581,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
       </div>
 
       {/* User Testimonials Section */}
-      <div className="py-24 px-4 bg-white dark:bg-gray-800">
+      <div className="py-12 md:py-24 px-4 bg-white dark:bg-gray-800">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -590,7 +590,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl mb-6 bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+            <h2 className="text-2xl sm:text-4xl md:text-5xl mb-6 bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
               What Our Users Say
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
@@ -603,7 +603,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             viewport={{ once: true }}
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8"
           >
             {/* Testimonial 1 */}
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-700 shadow-lg hover:shadow-xl transition-all duration-300">
@@ -775,7 +775,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
       </div>
 
       {/* FAQ Section */}
-      <div id="faq-section" className="py-24 px-4 bg-gray-50 dark:bg-gray-900">
+      <div id="faq-section" className="py-12 md:py-24 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -784,9 +784,9 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
               <HelpCircle className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-4xl md:text-5xl bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+              <h2 className="text-2xl sm:text-4xl md:text-5xl bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent text-center">
                 Frequently Asked Questions
               </h2>
             </div>

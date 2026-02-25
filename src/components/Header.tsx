@@ -40,7 +40,7 @@ export default function Header({ currentPage, onNavigate, darkMode, onLogout, pr
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
-    { id: 'dashboard', label: 'Home', icon: Home },
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'interpreter', label: 'Interpreter', icon: Video },
     { id: 'community', label: 'Community', icon: Users },
     { id: 'tutorials', label: 'Tutorials', icon: BookOpen },

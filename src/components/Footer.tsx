@@ -23,9 +23,9 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
     <footer className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t mt-12`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Main Footer Content */}
-        <div className="flex gap-16 mb-12">
+        <div className="flex flex-col md:flex-row gap-8 md:gap-16 mb-12">
           {/* Brand Section - Left Side (Larger) */}
-          <div className="flex-1 max-w-sm pr-8">
+          <div className="w-full md:flex-1 md:max-w-sm md:pr-8">
             <div className="flex items-center gap-3 mb-4">
               <img src={logo} alt="Vaani Setu Logo" className="w-12 h-12 object-contain" />
               <div>
@@ -42,7 +42,7 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
           </div>
 
           {/* Right Side - All Link Columns */}
-          <div className="flex-1 grid grid-cols-3 gap-8">
+          <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-8">
             {/* Quick Links Column */}
             <div>
               <h3 className={`mb-6 font-bold text-lg ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Quick Links</h3>
@@ -168,7 +168,7 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
         </div>
 
         {/* Bottom Footer */}
-        <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} pt-8 flex justify-between items-center`}>
+        <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} pt-8 flex flex-col sm:flex-row justify-between items-center gap-4`}>
           <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
             © 2025 Vaani Setu. All rights reserved.
           </p>
