@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import PublicNav from './PublicNav';
 import aareevImg from '../assets/27666179a65751a5bf9ce3ffaf46c9fa19b1404f.png';
 import shivanshImg from '../assets/a637af40a1a41e19b730027c5387e41be72236e3.png';
-import adityaImg from '../assets/e3d0fbae616eafb81d792fa8e20a687cb8982468.png';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface AboutPageProps {
@@ -17,7 +16,6 @@ interface AboutPageProps {
 export default function AboutPage({ onNavigate, darkMode = false, toggleDarkMode, isLoggedIn = false }: AboutPageProps) {
   const team = [
     { name: 'Shivansh Ojha', role: 'Co-Founder & CEO', avatar: shivanshImg, bio: 'Leading marketing strategy and business pitches', linkedin: 'https://www.linkedin.com/in/shivansh-ojha-87915b235/' },
-    { name: 'Aditya Bahuguna', role: 'Co-Founder & CIO', avatar: adityaImg, bio: 'Creating inclusive and accessible experiences', linkedin: 'https://www.linkedin.com/in/aditya-bahuguna-/' },
     { name: 'Aareev Srinivasan', role: 'Co-Founder & CTO', avatar: aareevImg, bio: 'Building scalable applications and visual design', linkedin: 'https://www.linkedin.com/in/aareev-srinivasan-746851372/' },
   ];
 
