@@ -88,7 +88,7 @@ export default function LandingPage({ onNavigate, darkMode = false, toggleDarkMo
       <PublicNav onNavigate={onNavigate} currentPage="landing" darkMode={darkMode} toggleDarkMode={toggleDarkMode} onSearch={handleSearch} />
       
       {/* Hero Section */}
-      <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 dark:from-gray-900 dark:via-blue-900/30 dark:to-purple-900/30 overflow-hidden">
+      <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 dark:from-gray-900 dark:via-blue-900/30 dark:to-purple-900/30 overflow-hidden pt-20 sm:pt-24">
         {/* Subtle animated background pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]" />

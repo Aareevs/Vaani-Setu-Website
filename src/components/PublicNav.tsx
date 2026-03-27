@@ -34,21 +34,21 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
           {/* Logo */}
           <button
             onClick={() => onNavigate('landing')}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            className="flex min-w-0 items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity"
           >
             <img src={logo} alt="Vaani Setu Logo" className="w-10 h-10 object-contain" />
-            <span className="bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+            <span className="truncate text-sm sm:text-base bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
               Vaani Setu
             </span>
           </button>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex min-w-0 flex-1 items-center justify-end gap-2 lg:gap-4 xl:gap-6">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`transition-colors ${
+                className={`px-2 py-1 text-sm transition-colors lg:text-base ${
                   currentPage === item.id
                     ? 'text-blue-600 dark:text-blue-400'
                     : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
@@ -57,7 +57,7 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
                 {item.label}
               </button>
             ))}
-            <div className="relative w-64 rounded-full border border-gray-300/60 bg-white/70 shadow-sm hover:shadow-md focus-within:border-gray-400 focus-within:shadow-md dark:bg-gray-800 dark:border-gray-700" role="search">
+            <div className="relative hidden lg:block w-44 xl:w-56 rounded-full border border-gray-300/60 bg-white/70 shadow-sm hover:shadow-md focus-within:border-gray-400 focus-within:shadow-md dark:bg-gray-800 dark:border-gray-700" role="search">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 type="text"
@@ -86,9 +86,10 @@ export default function PublicNav({ onNavigate, currentPage, darkMode = false, t
             )}
             <button
               onClick={() => onNavigate('signup')}
-              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+              className="shrink-0 px-3 lg:px-5 py-2 text-sm lg:text-base bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
             >
-              Register/Login
+              <span className="hidden lg:inline">Register/Login</span>
+              <span className="lg:hidden">Login</span>
             </button>
           </div>
 

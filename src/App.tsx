@@ -215,7 +215,7 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen overflow-x-hidden transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen overflow-x-hidden transition-colors duration-300 flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <ToastContainer toasts={toasts} onClose={removeToast} />
       <OfflineIndicator />
       
@@ -233,7 +233,7 @@ function App() {
 
 
       
-      <main className={isLoggedIn ? '' : ''}>
+      <main className="flex-1 min-w-0">
         {renderPage()}
       </main>
       {currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== '404' && <Footer darkMode={darkMode} onNavigate={navigateTo} isLoggedIn={isLoggedIn} />}

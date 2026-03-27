@@ -20,12 +20,12 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   return (
-    <footer className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t mt-12`}>
+    <footer className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t mt-12 overflow-x-hidden`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Main Footer Content */}
-        <div className="flex flex-col md:flex-row gap-8 md:gap-16 mb-12">
+        <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between sm:gap-10 lg:gap-16 mb-12">
           {/* Brand Section - Left Side (Larger) */}
-          <div className="w-full md:flex-1 md:max-w-sm md:pr-8">
+          <div className="w-full sm:max-w-sm lg:max-w-md sm:pr-4 lg:pr-8 sm:flex-shrink-0">
             <div className="flex items-center gap-3 mb-4">
               <img src={logo} alt="Vaani Setu Logo" className="w-12 h-12 object-contain" />
               <div>
@@ -42,9 +42,15 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
           </div>
 
           {/* Right Side - All Link Columns */}
-          <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-8">
+          <div
+            className={
+              isLoggedIn
+                ? 'grid w-full gap-x-10 gap-y-8 sm:flex-1 sm:grid-cols-3'
+                : 'grid w-full grid-cols-2 items-start gap-x-10 gap-y-8 sm:flex-1 sm:max-w-md md:max-w-none'
+            }
+          >
             {/* Quick Links Column */}
-            <div>
+            <div className="min-w-0">
               <h3 className={`mb-6 font-bold text-lg ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Quick Links</h3>
               <div className="space-y-3">
                 <button
@@ -92,7 +98,7 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
 
             {/* Features Column (Logged In Only) */}
             {isLoggedIn && (
-              <div>
+              <div className="min-w-0">
                 <h3 className={`mb-6 font-bold text-lg ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Features</h3>
                 <div className="space-y-3">
                   <button
@@ -124,7 +130,7 @@ export default function Footer({ darkMode, onNavigate, isLoggedIn = false }: Foo
             )}
 
             {/* Connect Column */}
-            <div>
+            <div className="min-w-0">
               <h3 className={`mb-6 font-bold text-lg ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Connect</h3>
               <div className="space-y-3">
                 <a
