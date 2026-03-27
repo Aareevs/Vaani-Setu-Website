@@ -340,7 +340,7 @@ Vaani Setu is built by a passionate team of <span className="text-white">develop
           viewport={{ once: true }}
         >
           <h2 className="text-3xl text-center mb-12 text-gray-900 dark:text-white">Meet the Team</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 gap-8 max-w-4xl mx-auto md:grid-cols-2">
             {team.map((member, index) => (
               <motion.div
                 key={member.name}
@@ -348,9 +348,9 @@ Vaani Setu is built by a passionate team of <span className="text-white">develop
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center"
+                className="flex h-full flex-col rounded-3xl border border-gray-200/80 bg-white/95 p-8 text-center shadow-[0_18px_45px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(37,99,235,0.14)] dark:border-gray-700 dark:bg-gray-800"
               >
-                <div className="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden ring-4 ring-blue-400 shadow-lg">
+                <div className="w-28 h-28 rounded-full mx-auto mb-5 overflow-hidden ring-4 ring-blue-100 shadow-lg dark:ring-blue-500/30">
                   <img 
                     src={member.avatar} 
                     alt={member.name}
@@ -361,17 +361,17 @@ Vaani Setu is built by a passionate team of <span className="text-white">develop
                     }}
                   />
                 </div>
-                <h3 className="text-lg mb-1 text-gray-900 dark:text-white">{member.name}</h3>
-                <p className="text-sm text-blue-600 dark:text-blue-400 mb-3">{member.role}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">{member.bio}</p>
+                <h3 className="text-2xl mb-2 text-gray-900 dark:text-white">{member.name}</h3>
+                <p className="text-base text-blue-600 dark:text-blue-400 mb-4">{member.role}</p>
+                <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400 mb-6 flex-1">{member.bio}</p>
                 <a
                   href={member.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 px-5 py-3 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 dark:border-blue-500/30 dark:text-blue-300 dark:hover:bg-blue-500/10"
                 >
                   <Linkedin className="w-4 h-4" />
-                  <span className="text-sm">Connect on LinkedIn</span>
+                  <span>LinkedIn Profile</span>
                 </a>
               </motion.div>
             ))}

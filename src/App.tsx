@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import LandingPage from './components/LandingPage';
 import AboutPage from './components/AboutPage';
 import PricingPage from './components/PricingPage';
@@ -26,6 +26,7 @@ type Page = 'landing' | 'about' | 'pricing' | 'login' | 'signup' | 'dashboard' |
 
 function App() {
   const { user, signOut } = useAuth();
+  const welcomedUserRef = useRef<string | null>(null);
   const [currentPage, setCurrentPage] = useState<Page>(() => {
     // Try to restore page from localStorage
     try {
@@ -152,7 +153,7 @@ function App() {
 
   // Handle Auth State Changes for Navigation
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
         // Only redirect to dashboard if we are on a public page (landing, login, signup)
         // Otherwise, stay on the current page (e.g. interpreter)
@@ -163,10 +164,28 @@ function App() {
           }
           return prev;
         });
-        toast.success('Welcome back!');
+        const userId = session?.user?.id ?? null;
+        if (userId && welcomedUserRef.current !== userId) {
+          welcomedUserRef.current = userId;
+          try {
+            const storedWelcomedUser = sessionStorage.getItem('vaani:welcomedUser');
+            if (storedWelcomedUser !== userId) {
+              sessionStorage.setItem('vaani:welcomedUser', userId);
+              toast.success('Welcome back!');
+            }
+          } catch (e) {
+            toast.success('Welcome back!');
+          }
+        }
       } else if (event === 'SIGNED_OUT') {
         setCurrentPage('landing');
         localStorage.setItem('vaani:currentPage', 'landing');
+        welcomedUserRef.current = null;
+        try {
+          sessionStorage.removeItem('vaani:welcomedUser');
+        } catch (e) {
+          // ignore
+        }
       }
     });
 
